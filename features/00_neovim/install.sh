@@ -1,11 +1,18 @@
 #!/bin/bash
 
-#NEOVIM_VERSION="0.12.4"
+source "$(dirname "$0")/../utils.sh"
 
-#TMP_FOLDER=$(mktemp -d)
+NEOVIM_VERSION="0.12.4"
 
-#cd "$TMP_FOLDER"
+if check_command_version nvim "$NEOVIM_VERSION"; then
+    echo "==> nvim $NEOVIM_VERSION already installed, skipping"
+    exit 0
+fi
 
-#curl -LO "https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}/nvim-linux-x64.tar.gz"
+TMP_FOLDER=$(mktemp -d)
 
-#tar -xzf nvim-linux-x64.tar.gz -C /usr/local --strip-components=1
+cd "$TMP_FOLDER"
+
+curl -LO "https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}/nvim-linux-x86_64.tar.gz"
+
+tar -xzf nvim-linux-x86_64.tar.gz -C /usr/local --strip-components=1
