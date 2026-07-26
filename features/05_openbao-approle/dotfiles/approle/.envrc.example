@@ -1,0 +1,44 @@
+#!/bin/bash
+# .envrc — server-side AppRole auth for direnv.
+#
+# Lives in the project directory, sourced on cd.
+# Uses /etc/bao/role-id + /etc/bao/secret-id (set by bootstrap-approle.sh).
+
+export VAULT_ADDR="${VAULT_ADDR:-https://bao.hnatekmar.xyz}"
+
+BAO_CONF_DIR="/etc/bao"
+
+# --- Authenticate via AppRole (non-interactive, no TTY needed) ---
+
+ROLE_ID=$(cat "$BAO_CONF_DIR/role-id" 2>/dev/null) || {
+    echo "ERROR: $BAO_CONF_DIR/role-id not found. Run bootstrap-approle.sh first." >&2
+    return 1
+}
+
+SECRET_ID=$(cat "$BAO_CONF_DIR/secret-id" 2>/dev/null) || {
+    echo "ERROR: $BAO_CONF_DIR/secret-id not found. Run bootstrap-approle.sh first." >&2
+    return 1
+}
+
+VAULT_TOKEN=$(bao write -field=token "auth/approle/login" \
+    role_id="$ROLE_ID" \
+    secret_id="$SECRET_ID")
+
+export VAULT_TOKEN
+
+# --- Fetch secrets ---
+
+# Hot path
+export s3_url=$(bao kv get -field=host /algovectra/s3/hot)
+export s3_access_key=$(bao kv get -field=ACCESS_KEY /algovectra/s3/hot)
+export s3_secret_key=$(bao kv get -field=SECRET_KEY /algovectra/s3/hot)
+
+# Cold path
+export s3_cold_url=$(bao kv get -field=host /algovectra/s3/cold)
+export s3_cold_access_key=$(bao kv get -field=ACCESS_KEY /algovectra/s3/cold)
+export s3_cold_secret_key=$(bao kv get -field=SECRET_KEY /algovectra/s3/cold)
+
+# RunPod
+export RUNPOD_API_KEY=$(bao kv get -field=api_key /algovectra/runpod)
+export RUNPOD_COMPONENTS_URL=$(bao kv get -field=components_url /algovectra/runpod)
+export RUNPOD_PIZZA_URL=$(bao kv get -field=pizza_url /algovectra/runpod)

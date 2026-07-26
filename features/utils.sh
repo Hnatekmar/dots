@@ -39,11 +39,13 @@ check_command_version() {
             actual=$(nvim --version 2>/dev/null | head -1 | sed -n 's/.*v\([0-9][0-9.]*\).*/\1/p')
             ;;
         gum)
-            # gum has no --version flag; check binary existence only
-            actual="1"
+            actual=$(gum --version 2>/dev/null | head -1 | sed -n 's/.*v\([0-9][0-9.]*\).*/\1/p')
             ;;
         crush)
             actual=$(crush --version 2>/dev/null | sed -n 's/^crush version v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        bao)
+            actual=$(bao version 2>/dev/null | head -1 | sed -n 's/OpenBao v\([0-9][0-9.]*\).*/\1/p')
             ;;
         *)
             actual=$("$cmd" --version 2>/dev/null | head -1 | sed -n 's/.*\([0-9][0-9.]*\).*/\1/p')

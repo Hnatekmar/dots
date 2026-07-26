@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 source "$(dirname "$0")/../utils.sh"
 
@@ -16,10 +17,21 @@ if command -v lazygit &>/dev/null; then
     echo "==> lazygit already installed, skipping"
 else
     echo "==> Installing lazygit..."
+
+    # Detect architecture
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  ARCH="x86_64" ;;
+        aarch64) ARCH="arm64" ;;
+        *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
+    esac
+
     TMP_FOLDER=$(mktemp -d)
+    trap 'rm -rf "$TMP_FOLDER"' EXIT
+
     cd "$TMP_FOLDER"
-    curl -LO "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_x86_64.tar.gz"
-    tar -xzf lazygit_${LAZYGIT_VERSION}_linux_x86_64.tar.gz -C /usr/local/bin lazygit
+    curl -LO "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz"
+    tar -xzf "lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz" -C /usr/local/bin lazygit
 fi
 
 # Install ripgrep
@@ -36,7 +48,7 @@ if command -v fd &>/dev/null; then
 else
     echo "==> Installing fd-find..."
     dnf install -y fd-find
-    # Link fdfind to fd
+    # Link fdfind to fd (Fedora packages it as fdfind)
     if command -v fdfind &>/dev/null; then
         ln -sf "$(which fdfind)" /usr/local/bin/fd
     fi
