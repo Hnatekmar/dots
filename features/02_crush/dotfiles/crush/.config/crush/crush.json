@@ -1,0 +1,109 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "options": {
+    "disable_default_providers": true,
+    "context_paths": [
+      "~/.config/crush/graphiti-instructions.md"
+    ]
+  },
+  "mcp": {
+    "graphiti": {
+      "type": "http",
+      "url": "https://graphity.personal-hermes.hnatekmar.dev/mcp"
+    }
+  },
+  "lsp": {
+    "go": {
+      "command": "gopls",
+      "env": {
+        "GOTOOLCHAIN": "go1.26.3"
+      }
+    }
+  },
+  "providers": {
+    "smart": {
+      "name": "smart",
+      "base_url": "https://smart-proxy.personal-hermes.hnatekmar.dev/v1",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "Smart routing",
+          "id": "auto",
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.28
+        }
+      ]
+    },
+    "lmproxy": {
+      "name": "lmproxy",
+      "base_url": "https://proxy.personal-hermes.hnatekmar.dev/v1",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "Qwen 3.6 35B (instruct)",
+          "id": "qwen36-instruct",
+          "can_reason": false,
+          "context_window": 159456,
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.9,
+          "supports_attachments": true
+        },
+        {
+          "name": "Qwen 3.6 35B (thinking)",
+          "id": "qwen36-thinking",
+          "can_reason": true,
+          "context_window": 159456,
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.9,
+          "supports_attachments": true
+        },
+        {
+          "name": "Qwen 3.6 35B (coding)",
+          "id": "qwen36-coding",
+          "can_reason": true,
+          "context_window": 159456,
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.9,
+          "supports_attachments": true
+        },
+        {
+          "name": "GLM 5.2 (max)",
+          "id": "glm-max",
+          "can_reason": true,
+          "context_window": 200000,
+          "cost_per_1m_in": 1.4,
+          "cost_per_1m_out": 4.4
+        },
+        {
+          "name": "GLM 5.2 (high)",
+          "id": "glm-high",
+          "can_reason": true,
+          "context_window": 200000,
+          "cost_per_1m_in": 1.4,
+          "cost_per_1m_out": 4.4
+        },
+        {
+          "name": "DeepSeek V4 Flash (no thinking)",
+          "id": "deepseek",
+          "can_reason": false,
+          "context_window": 1000000,
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.28
+        },
+        {
+          "name": "DeepSeek V4 Flash (thinking)",
+          "id": "deepseek-max",
+          "default_reasoning_effort": "max",
+          "reasoning_levels": [
+            "max",
+            "high"
+          ],
+          "can_reason": true,
+          "context_window": 1000000,
+          "cost_per_1m_in": 0.14,
+          "cost_per_1m_out": 0.28
+        }
+      ]
+    }
+  }
+}
