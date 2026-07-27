@@ -3,8 +3,10 @@
 #
 # Lives in the project directory, sourced on cd.
 # Uses /etc/bao/role-id + /etc/bao/secret-id (set by bootstrap-approle.sh).
+#
+# Copy this file to .envrc in your project and fill in your secret paths.
 
-export VAULT_ADDR="${VAULT_ADDR:-https://bao.hnatekmar.xyz}"
+export VAULT_ADDR="${VAULT_ADDR:-https://bao.example.com}"
 
 BAO_CONF_DIR="/etc/bao"
 
@@ -27,18 +29,11 @@ VAULT_TOKEN=$(bao write -field=token "auth/approle/login" \
 export VAULT_TOKEN
 
 # --- Fetch secrets ---
-
-# Hot path
-export s3_url=$(bao kv get -field=host /algovectra/s3/hot)
-export s3_access_key=$(bao kv get -field=ACCESS_KEY /algovectra/s3/hot)
-export s3_secret_key=$(bao kv get -field=SECRET_KEY /algovectra/s3/hot)
-
-# Cold path
-export s3_cold_url=$(bao kv get -field=host /algovectra/s3/cold)
-export s3_cold_access_key=$(bao kv get -field=ACCESS_KEY /algovectra/s3/cold)
-export s3_cold_secret_key=$(bao kv get -field=SECRET_KEY /algovectra/s3/cold)
-
-# RunPod
-export RUNPOD_API_KEY=$(bao kv get -field=api_key /algovectra/runpod)
-export RUNPOD_COMPONENTS_URL=$(bao kv get -field=components_url /algovectra/runpod)
-export RUNPOD_PIZZA_URL=$(bao kv get -field=pizza_url /algovectra/runpod)
+#
+# Pattern: export VAR=$(bao kv get -field=<field> <path>)
+#
+# Examples:
+#   export DB_HOST=$(bao kv get -field=host /myproject/db)
+#   export DB_USER=$(bao kv get -field=user /myproject/db)
+#   export DB_PASS=$(bao kv get -field=password /myproject/db)
+#   export API_KEY=$(bao kv get -field=api_key /myproject/api)
