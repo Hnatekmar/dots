@@ -27,10 +27,33 @@ TARBALL="go${GO_VERSION}.linux-${ARCH}.tar.gz"
 
 echo "==> Downloading Go $GO_VERSION..."
 curl -LO "https://go.dev/dl/${TARBALL}"
-curl -LO "https://go.dev/dl/${TARBALL}.sha256"
 
+# Go publishes SHA256 via their JSON API, not as a downloadable file
 echo "==> Verifying checksum..."
-sha256sum --ignore-missing --check "${TARBALL}.sha256"
+EXPECTED=$(curl -sL "https://go.dev/dl/?mode=json&include=all" \
+    | python3 -c "
+import json, sys
+for r in json.load(sys.stdin):
+    if r['version'] == 'go${GO_VERSION}':
+        for f in r['files']:
+            if f['os'] == 'linux' and f['arch'] == '${ARCH}':
+                print(f['sha256'])
+                break
+        break
+")
+
+if [ -z "$EXPECTED" ]; then
+    echo "ERROR: Could not fetch Go checksum" >&2
+    exit 1
+fi
+
+ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
+if [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "ERROR: Checksum mismatch for $TARBALL" >&2
+    echo "  Expected: $EXPECTED" >&2
+    echo "  Actual:   $ACTUAL" >&2
+    exit 1
+fi
 
 # Download and verify succeeded — safe to remove old install
 rm -rf /usr/local/go

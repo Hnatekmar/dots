@@ -1,34 +1,34 @@
 .PHONY: test clean build run shell lint test-go test-neovim test-base
 
-# Docker image tag
+# Container runtime (podman if available, docker otherwise)
+CONTAINER = $(shell command -v podman 2>/dev/null || echo docker)
+
+# Image tag
 IMAGE = dots-test
 
 # Build the test image
 build:
-	docker build -t $(IMAGE) .
+	$(CONTAINER) build -t $(IMAGE) .
 
-# Run full bootstrap in a throwaway container
+# Run full bootstrap in a throwaway container (already baked into image via RUN)
 run: build
-	docker run --rm $(IMAGE)
+	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version && nvim --version | head -1 && bao version | head -1'
 
 # Drop into a shell in the test container for debugging
 shell: build
-	docker run --rm -it $(IMAGE) /bin/bash
+	$(CONTAINER) run --rm -it $(IMAGE) /bin/bash
 
 # Test only the base feature (stow + dotfiles)
 test-base: build
-	docker run --rm $(IMAGE) bash -c 'bash features/00_base/install.sh && \
-		cat ~/.bash_profile && cat ~/.profile'
+	$(CONTAINER) run --rm $(IMAGE) bash -c 'cat ~/.bash_profile && echo "---" && cat ~/.profile'
 
 # Test only the Go install
 test-go: build
-	docker run --rm $(IMAGE) bash -c 'bash features/00_go/install.sh && \
-		/usr/local/go/bin/go version'
+	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version'
 
 # Test only the Neovim install
 test-neovim: build
-	docker run --rm $(IMAGE) bash -c 'bash features/00_neovim/install.sh && \
-		nvim --version | head -1'
+	$(CONTAINER) run --rm $(IMAGE) bash -c 'nvim --version | head -1'
 
 # Run shellcheck on all scripts (if shellcheck is installed locally)
 lint:
@@ -37,4 +37,4 @@ lint:
 
 # Clean up test images
 clean:
-	docker rmi $(IMAGE) 2>/dev/null || true
+	$(CONTAINER) rmi $(IMAGE) 2>/dev/null || true

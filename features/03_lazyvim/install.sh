@@ -27,11 +27,15 @@ else
     esac
 
     TMP_FOLDER=$(mktemp -d)
-    trap 'rm -rf "$TMP_FOLDER"' EXIT
 
-    cd "$TMP_FOLDER"
-    curl -LO "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz"
-    tar -xzf "lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz" -C /usr/local/bin lazygit
+    # Download in a subshell to avoid changing cwd
+    (
+        cd "$TMP_FOLDER"
+        curl -LO "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz"
+        tar -xzf "lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz" -C /usr/local/bin lazygit
+    )
+
+    rm -rf "$TMP_FOLDER"
 fi
 
 # Install ripgrep
@@ -61,12 +65,24 @@ if ! command -v gopls &>/dev/null; then
 fi
 
 # Initialize lazyvim submodule
-LAZYVIM_DIR="$(cd "$(dirname "$0")" && pwd)/lazyvim"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LAZYVIM_DIR="$SCRIPT_DIR/lazyvim"
 
-if [ ! -d "$LAZYVIM_DIR/.git" ]; then
-    echo "==> Cloning lazyvim submodule..."
-    DOTS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-    (cd "$DOTS_ROOT" && git submodule update --init --recursive)
+# Check if submodule has actual content (not just a gitdir pointer)
+if [ ! -d "$LAZYVIM_DIR" ] || [ -z "$(ls -A "$LAZYVIM_DIR" 2>/dev/null | grep -v '^\.git$')" ]; then
+    echo "==> Initializing lazyvim submodule..."
+    DOTS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+    # Try git submodule update first (works when .git is intact)
+    if (cd "$DOTS_ROOT" && git submodule update --init --recursive 2>/dev/null); then
+        :
+    else
+        # Fallback: clone directly from .gitmodules URL (Docker, tarball, etc.)
+        echo "==> git submodule update failed, cloning directly..."
+        SUBMODULE_URL=$(grep -A1 'submodule "features/03_lazyvim/lazyvim"' "$DOTS_ROOT/.gitmodules" | grep url | sed 's/.*= //')
+        rm -rf "$LAZYVIM_DIR"
+        git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"
+    fi
 fi
 
 # Symlink to ~/.config/nvim

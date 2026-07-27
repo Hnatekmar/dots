@@ -28,16 +28,32 @@ TARBALL="nvim-linux-${ARCH}.tar.gz"
 echo "==> Downloading Neovim $NEOVIM_VERSION..."
 curl -LO "https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}/${TARBALL}"
 
+# Neovim doesn't publish checksum files — fetch the SHA256 from the GitHub API
 echo "==> Verifying checksum..."
-CHECKSUM_URL="https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}/${TARBALL}.sha256sum"
-curl -sLO "$CHECKSUM_URL"
-# The sha256sum file contains the tarball filename — verify in place
-sha256sum --ignore-missing --check "${TARBALL}.sha256sum" || {
-    # Neovim publishes SHA256 without the tarball name; fall back to manual check
-    EXPECTED=$(cut -d' ' -f1 < "${TARBALL}.sha256sum")
-    ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
-    [ "$EXPECTED" = "$ACTUAL" ] || { echo "ERROR: Checksum mismatch" >&2; exit 1; }
-}
+EXPECTED=$(curl -sL "https://api.github.com/repos/neovim/neovim/releases/tags/v${NEOVIM_VERSION}" \
+    | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for a in data.get('assets', []):
+    if a['name'] == '${TARBALL}':
+        digest = a.get('digest', '')
+        if digest.startswith('sha256:'):
+            print(digest[7:])
+        break
+")
+
+if [ -z "$EXPECTED" ]; then
+    echo "ERROR: Could not fetch Neovim checksum from GitHub API" >&2
+    exit 1
+fi
+
+ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
+if [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "ERROR: Checksum mismatch for $TARBALL" >&2
+    echo "  Expected: $EXPECTED" >&2
+    echo "  Actual:   $ACTUAL" >&2
+    exit 1
+fi
 
 tar -xzf "$TARBALL" -C /usr/local --strip-components=1
 
