@@ -1,6 +1,7 @@
 #!/bin/bash
+set -euo pipefail
 
-rm -rf ~/.bash_profile
-
-cd dotfiles
-stow -t $HOME -R base
+# Stow handles replacing existing symlinks and conflicts.
+# No need for destructive rm -rf.
+cd "$(dirname "$0")/dotfiles"
+stow -t "$HOME" -R base

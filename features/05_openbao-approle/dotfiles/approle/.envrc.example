@@ -1,0 +1,39 @@
+#!/bin/bash
+# .envrc — server-side AppRole auth for direnv.
+#
+# Lives in the project directory, sourced on cd.
+# Uses /etc/bao/role-id + /etc/bao/secret-id (set by bootstrap-approle.sh).
+#
+# Copy this file to .envrc in your project and fill in your secret paths.
+
+export VAULT_ADDR="${VAULT_ADDR:-https://bao.example.com}"
+
+BAO_CONF_DIR="/etc/bao"
+
+# --- Authenticate via AppRole (non-interactive, no TTY needed) ---
+
+ROLE_ID=$(cat "$BAO_CONF_DIR/role-id" 2>/dev/null) || {
+    echo "ERROR: $BAO_CONF_DIR/role-id not found. Run bootstrap-approle.sh first." >&2
+    return 1
+}
+
+SECRET_ID=$(cat "$BAO_CONF_DIR/secret-id" 2>/dev/null) || {
+    echo "ERROR: $BAO_CONF_DIR/secret-id not found. Run bootstrap-approle.sh first." >&2
+    return 1
+}
+
+VAULT_TOKEN=$(bao write -field=token "auth/approle/login" \
+    role_id="$ROLE_ID" \
+    secret_id="$SECRET_ID")
+
+export VAULT_TOKEN
+
+# --- Fetch secrets ---
+#
+# Pattern: export VAR=$(bao kv get -field=<field> <path>)
+#
+# Examples:
+#   export DB_HOST=$(bao kv get -field=host /myproject/db)
+#   export DB_USER=$(bao kv get -field=user /myproject/db)
+#   export DB_PASS=$(bao kv get -field=password /myproject/db)
+#   export API_KEY=$(bao kv get -field=api_key /myproject/api)

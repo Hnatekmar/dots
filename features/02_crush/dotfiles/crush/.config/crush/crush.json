@@ -16,7 +16,7 @@
     "go": {
       "command": "gopls",
       "env": {
-        "GOTOOLCHAIN": "go1.26.3"
+        "GOTOOLCHAIN": "go1.26.5"
       }
     }
   },
