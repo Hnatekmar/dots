@@ -14,10 +14,7 @@
   },
   "lsp": {
     "go": {
-      "command": "gopls",
-      "env": {
-        "GOTOOLCHAIN": "go1.26.5"
-      }
+      "command": "gopls"
     }
   },
   "providers": {

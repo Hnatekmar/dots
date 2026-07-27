@@ -9,9 +9,6 @@ if ! command -v bao &>/dev/null; then
     bash "$(dirname "$0")/../04_openbao/install.sh"
 fi
 
-# Stow the .envrc.example template into $HOME
-cd "$(dirname "$0")/dotfiles"
-stow -t "$HOME" -R approle
-
 echo "==> OpenBao AppRole feature installed."
 echo "==> To enroll this machine: bao login -method=oidc role=operator && bash features/05_openbao-approle/bootstrap-approle.sh"
+echo "==> bootstrap-approle.sh generates ~/.local/bin/bao-auth and ~/.config/direnv/lib/bao.sh."

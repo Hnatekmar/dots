@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Install packages via whichever distro package manager is available.
+# Used for the few tools not built from source (currently just `stow`).
+pkg_install() {
+    if command -v dnf >/dev/null 2>&1; then
+        dnf install -y "$@"
+    elif command -v apt-get >/dev/null 2>&1; then
+        apt-get update -qq && apt-get install -y "$@"
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -S --noconfirm --needed "$@"
+    else
+        echo "ERROR: no supported package manager (dnf/apt-get/pacman)" >&2
+        return 1
+    fi
+}
+
 # Version comparison: returns 0 if installed >= required, 1 otherwise
 version_gte() {
     local installed="$1"
@@ -27,6 +42,9 @@ check_command_version() {
     local cmd="$1"
     local expected="$2"
 
+    # --force: always report "needs install" so installers re-run
+    [ "${DOTS_FORCE:-0}" = "1" ] && return 1
+
     command -v "$cmd" &>/dev/null || return 1
 
     local actual=""
@@ -46,6 +64,18 @@ check_command_version() {
             ;;
         bao)
             actual=$(bao version 2>/dev/null | head -1 | sed -n 's/OpenBao v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        rg)
+            actual=$(rg --version 2>/dev/null | head -1 | sed -n 's/ripgrep \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        fd)
+            actual=$(fd --version 2>/dev/null | head -1 | sed -n 's/fd \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        lazygit)
+            actual=$(lazygit --version 2>/dev/null | sed -n 's/.*version=\([0-9][0-9.]*\).*/\1/p' | head -1)
+            ;;
+        cargo)
+            actual=$(cargo --version 2>/dev/null | sed -n 's/cargo \([0-9][0-9.]*\).*/\1/p')
             ;;
         *)
             actual=$("$cmd" --version 2>/dev/null | head -1 | sed -n 's/.*\([0-9][0-9.]*\).*/\1/p')
