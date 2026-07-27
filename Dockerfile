@@ -7,7 +7,6 @@ RUN dnf install -y \
         stow \
         curl \
         tar \
-        sha256sum \
         findutils \
         && dnf clean all
 
@@ -16,5 +15,9 @@ COPY . /dots
 
 WORKDIR /dots
 
-# Default command: run the full bootstrap
-CMD ["bash", "bootstrap.sh"]
+# Run the full bootstrap at build time.
+# If any feature installer fails, the build fails — this is the CI gate.
+RUN bash bootstrap.sh
+
+# Drop into a shell for interactive debugging
+CMD ["bash"]
