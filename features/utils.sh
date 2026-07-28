@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# Install packages via whichever distro package manager is available.
-# Used for the few tools not built from source (currently just `stow`).
-pkg_install() {
-    if command -v dnf >/dev/null 2>&1; then
-        dnf install -y "$@"
-    elif command -v apt-get >/dev/null 2>&1; then
-        apt-get update -qq && apt-get install -y "$@"
-    elif command -v pacman >/dev/null 2>&1; then
-        pacman -S --noconfirm --needed "$@"
-    else
-        echo "ERROR: no supported package manager (dnf/apt-get/pacman)" >&2
-        return 1
-    fi
-}
-
 # Version comparison: returns 0 if installed >= required, 1 otherwise
 version_gte() {
     local installed="$1"

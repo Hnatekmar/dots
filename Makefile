@@ -60,7 +60,7 @@ test-neovim: build
 # Run shellcheck on all scripts (if shellcheck is installed locally)
 lint:
 	@which shellcheck >/dev/null 2>&1 || { echo "Install shellcheck (dnf/apt/pacman: shellcheck)"; exit 1; }
-	shellcheck bootstrap.sh features/*/install.sh features/utils.sh features/05_openbao-approle/bootstrap-approle.sh features/00_launcher/dotfiles/local/bin/dots-bootstrap.sh
+	shellcheck bootstrap.sh features/*/install.sh features/utils.sh features/05_openbao-approle/bootstrap-approle.sh features/00_launcher/dotfiles/.local/bin/dots-bootstrap.sh
 
 # Clean up test images
 clean:
