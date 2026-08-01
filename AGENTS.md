@@ -130,6 +130,13 @@ images by routing them to a multimodel LLM endpoint. Env-configurable via
   source file. PATH is handled by bootstrap.sh and the stowed shell config.
   `rustup-init` is downloaded from `static.rust-lang.org` and its `.sha256`
   sibling is verified before execution.
+- **oh-my-zsh must be installed with `--keep-zshrc --unattended`** in
+  `00_ohmyzsh`. The installer would otherwise write its template over the
+  *stowed* `~/.zshrc` (or wait on an interactive chsh prompt). `--keep-zshrc`
+  preserves the repo's curated file; the external plugins `zsh-autosuggestions`
+  and `zsh-syntax-highlighting` referenced in `~/.zshrc` are cloned into
+  `$OH_MY_ZSH/custom/plugins` because they aren't bundled with oh-my-zsh.
+  `zsh` is added to the prereq install in `bootstrap.sh`.
 - **`lazygit` version detection is unreliable** (built via `go install`, no
   ldflags), so it skips version gating entirely.
 - Architecture mapping is repeated per installer: `x86_64`→`amd64`/`x86_64`

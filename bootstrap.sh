@@ -20,11 +20,11 @@ source "$DOTS_ROOT/features/utils.sh"
 # fully distro-agnostic.
 echo "==> Installing prerequisites..."
 if command -v dnf >/dev/null 2>&1; then
-    dnf install -y git curl tar findutils python3 gcc make stow
+    dnf install -y git curl tar findutils python3 gcc make stow zsh
 elif command -v apt-get >/dev/null 2>&1; then
-    apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make stow
+    apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make stow zsh
 elif command -v pacman >/dev/null 2>&1; then
-    pacman -S --noconfirm --needed git curl tar findutils python gcc make stow
+    pacman -S --noconfirm --needed git curl tar findutils python gcc make stow zsh
 else
     echo "ERROR: no supported package manager (dnf/apt-get/pacman)" >&2
     exit 1
