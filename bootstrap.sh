@@ -3,6 +3,14 @@ set -euo pipefail
 
 DOTS_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
+# If invoked via sudo, operate on the invoking user's home, not /root.
+# Otherwise cargo, go-installed binaries, stowed dotfiles and the launcher
+# would all land in /root and never appear in the user's shell.
+if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    export HOME
+fi
+
 # shellcheck source=features/utils.sh
 source "$DOTS_ROOT/features/utils.sh"
 

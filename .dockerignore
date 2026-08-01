@@ -1,0 +1,8 @@
+# Keep the build context small: .git and local artifacts don't belong in the image.
+# .gitmodules IS included (the lazyvim submodule URL is read from it at install time).
+.git
+test-home
+*.log
+*.swp
+*~
+.DS_Store

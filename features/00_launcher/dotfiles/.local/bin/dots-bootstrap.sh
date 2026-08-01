@@ -5,6 +5,12 @@ set -euo pipefail
 # Stowed into ~/.local/bin by the 00_launcher feature.
 # Self-locates the repo via the stow symlink and runs feature installers.
 
+# If invoked via sudo, operate on the invoking user's home, not /root.
+if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    export HOME
+fi
+
 # Resolve real path (follows the stow symlink back into the repo)
 SCRIPT_REAL="$(readlink -f "$0")"
 dir="$(dirname "$SCRIPT_REAL")"

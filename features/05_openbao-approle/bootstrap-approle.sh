@@ -50,10 +50,20 @@ ROLE_ID=$(bao read -field=role_id "auth/approle/role/$ROLE_NAME/role-id")
 echo "$ROLE_ID" > "$BAO_CONF_DIR/role-id"
 chmod 0640 "$BAO_CONF_DIR/role-id"
 
-# --- Store secret_id (reuse if present and role still resolves) ---
+# --- Store secret_id (reuse only if the stored secret still logs in) ---
 
-if [ -f "$BAO_CONF_DIR/secret-id" ] && bao read "auth/approle/role/$ROLE_NAME/role-id" >/dev/null 2>&1; then
-    echo "==> Existing secret-id found for $ROLE_NAME; reusing."
+if [ -f "$BAO_CONF_DIR/secret-id" ]; then
+    STORED_ROLE=$(cat "$BAO_CONF_DIR/role-id" 2>/dev/null)
+    STORED_SECRET=$(cat "$BAO_CONF_DIR/secret-id")
+    if [ -n "$STORED_ROLE" ] && [ -n "$STORED_SECRET" ] && \
+       bao write -field=token "auth/approle/login" role_id="$STORED_ROLE" secret_id="$STORED_SECRET" >/dev/null 2>&1; then
+        echo "==> Existing secret-id still valid for $ROLE_NAME; reusing."
+    else
+        echo "==> Existing secret-id invalid; generating a new one for $ROLE_NAME..."
+        SECRET_ID=$(bao write -f -field=secret_id "auth/approle/role/$ROLE_NAME/secret-id")
+        echo "$SECRET_ID" > "$BAO_CONF_DIR/secret-id"
+        chmod 0600 "$BAO_CONF_DIR/secret-id"
+    fi
 else
     echo "==> Generating new secret_id for $ROLE_NAME..."
     SECRET_ID=$(bao write -f -field=secret_id "auth/approle/role/$ROLE_NAME/secret-id")
@@ -85,13 +95,14 @@ ROLE_ID=\$(cat "\$BAO_CONF_DIR/role-id" 2>/dev/null) || {
     echo "ERROR: \$BAO_CONF_DIR/role-id missing. Run bootstrap-approle.sh." >&2
     exit 1
 }
-SECRET_ID=\$(cat "\$BAO_CONF_DIR/secret-id" 2>/dev/null) || {
+[ -r "\$BAO_CONF_DIR/secret-id" ] || {
     echo "ERROR: \$BAO_CONF_DIR/secret-id missing. Run bootstrap-approle.sh." >&2
     exit 1
 }
 
+# @-syntax: bao reads the secret from the file, so it never appears in `ps`.
 TOKEN=\$(bao write -field=token "auth/approle/login" \\
-    role_id="\$ROLE_ID" secret_id="\$SECRET_ID") || {
+    role_id="\$ROLE_ID" secret_id="@\$BAO_CONF_DIR/secret-id") || {
     echo "ERROR: AppRole login failed." >&2
     exit 1
 }

@@ -54,7 +54,7 @@ Features run in lexical order. Each feature is idempotent — re-running skips a
 
 ### Download verification
 
-Go, Neovim, and OpenBao downloads all verify SHA256 checksums before extracting. ripgrep, fd, gum, crush, and lazygit are built from source via `cargo`/`go` against pinned versions.
+Go, Neovim, OpenBao, and rustup downloads all verify SHA256 checksums before extracting. ripgrep, fd, gum, crush, and lazygit are built from source via `cargo`/`go` against pinned versions.
 
 ### Secret management (OpenBao AppRole)
 
@@ -120,7 +120,7 @@ dots/
 ├── Dockerfile.debian         # Debian bookworm test image
 ├── Dockerfile.arch           # Arch test image
 ├── features/
-│   ├── utils.sh               # Shared: pkg_install, version checks (DOTS_FORCE-aware)
+│   ├── utils.sh               # Shared: version checks (DOTS_FORCE-aware) + stow_pkg
 │   ├── 00_base/               # Stows shell configs
 │   ├── 00_go/                 # Downloads + verifies + installs Go
 │   ├── 00_rust/               # rustup + stable toolchain

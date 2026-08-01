@@ -26,14 +26,17 @@ build-arch:
 # ── Smoke tests (per distro) ──
 
 # Verify all major tools bootstrapped correctly
+# (includes gum and crush, the two go-installed tools)
+GUM_CRUSH = gum --version | head -1 && crush --version | head -1
+
 test-fedora: build-fedora
-	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1'
+	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1 && $(GUM_CRUSH)'
 
 test-debian: build-debian
-	$(CONTAINER) run --rm $(IMAGE_DEBIAN) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1'
+	$(CONTAINER) run --rm $(IMAGE_DEBIAN) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1 && $(GUM_CRUSH)'
 
 test-arch: build-arch
-	$(CONTAINER) run --rm $(IMAGE_ARCH) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1'
+	$(CONTAINER) run --rm $(IMAGE_ARCH) bash -c 'go version && nvim --version | head -1 && rg --version | head -1 && fd --version && lazygit --version | head -1 && cargo --version && bao version | head -1 && $(GUM_CRUSH)'
 
 test-all: test-fedora test-debian test-arch
 

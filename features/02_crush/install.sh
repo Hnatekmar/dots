@@ -5,8 +5,7 @@ source "$(dirname "$0")/../utils.sh"
 
 CRUSH_VERSION=0.87.0
 
-cd "$(dirname "$0")/dotfiles/"
-stow -t "$HOME" -R crush
+stow_pkg "$(dirname "$0")/dotfiles" crush
 
 if check_command_version crush "$CRUSH_VERSION"; then
     echo "==> crush $CRUSH_VERSION already installed, skipping"

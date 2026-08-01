@@ -5,16 +5,18 @@ source "$(dirname "$0")/../utils.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Delegate to the features lazyvim depends on
-for dep in 00_neovim 02_ripgrep 02_fd 03_lazygit; do
+# Delegate to the features lazyvim depends on (00_go first: lazygit and gopls are
+# built with go, so --only 03_lazyvim must still work standalone)
+for dep in 00_go 00_neovim 02_ripgrep 02_fd 03_lazygit; do
     echo "==> Ensuring dependency: $dep"
     bash "$SCRIPT_DIR/../$dep/install.sh"
 done
 
-# Install gopls for Go LSP
+# Install gopls for Go LSP (pinned for reproducible installs)
+GOPSL_VERSION=0.23.0
 if ! command -v gopls &>/dev/null; then
     echo "==> Installing gopls..."
-    go install golang.org/x/tools/gopls@latest
+    go install "golang.org/x/tools/gopls@v${GOPSL_VERSION}"
 fi
 
 # Initialize lazyvim submodule
@@ -28,9 +30,15 @@ if [ ! -d "$LAZYVIM_DIR" ] || [ -z "$(ls -A "$LAZYVIM_DIR" 2>/dev/null | grep -v
         :
     else
         echo "==> git submodule update failed, cloning directly..."
-        SUBMODULE_URL=$(grep -A1 'submodule "features/03_lazyvim/lazyvim"' "$DOTS_ROOT/.gitmodules" | grep url | sed 's/.*= //')
-        rm -rf "$LAZYVIM_DIR"
-        git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"
+        # Uses -A3 so the url line (3 lines after the [submodule] header) is kept
+        SUBMODULE_URL=$(grep -A3 'lazyvim"' "$DOTS_ROOT/.gitmodules" | sed -n 's/.*url *= *//p')
+        if [ -n "$SUBMODULE_URL" ]; then
+            rm -rf "$LAZYVIM_DIR"
+            git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"
+        else
+            echo "ERROR: could not determine lazyvim submodule URL from .gitmodules" >&2
+            exit 1
+        fi
     fi
 fi
 

@@ -99,6 +99,8 @@ def main() -> None:
                 print(reasoning, file=sys.stderr)
                 print("Warning: model returned reasoning only (content was None)", file=sys.stderr)
                 sys.exit(1)
+            print("Error: model returned no content", file=sys.stderr)
+            sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
