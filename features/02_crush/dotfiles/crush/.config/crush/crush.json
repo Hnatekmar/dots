@@ -14,10 +14,7 @@
   },
   "lsp": {
     "go": {
-      "command": "gopls",
-      "env": {
-        "GOTOOLCHAIN": "go1.26.5"
-      }
+      "command": "gopls"
     }
   },
   "providers": {
@@ -43,7 +40,7 @@
           "name": "Qwen 3.6 35B (instruct)",
           "id": "qwen36-instruct",
           "can_reason": false,
-          "context_window": 159456,
+          "context_window": 262144,
           "cost_per_1m_in": 0.14,
           "cost_per_1m_out": 0.9,
           "supports_attachments": true
@@ -52,7 +49,7 @@
           "name": "Qwen 3.6 35B (thinking)",
           "id": "qwen36-thinking",
           "can_reason": true,
-          "context_window": 159456,
+          "context_window": 262144,
           "cost_per_1m_in": 0.14,
           "cost_per_1m_out": 0.9,
           "supports_attachments": true
@@ -70,23 +67,34 @@
           "name": "GLM 5.2 (max)",
           "id": "glm-max",
           "can_reason": true,
-          "context_window": 200000,
+          "context_window": 655360,
           "cost_per_1m_in": 1.4,
-          "cost_per_1m_out": 4.4
+          "cost_per_1m_out": 4.4,
+          "supports_attachments": true
         },
         {
           "name": "GLM 5.2 (high)",
           "id": "glm-high",
           "can_reason": true,
-          "context_window": 200000,
+          "context_window": 655360,
           "cost_per_1m_in": 1.4,
+          "supports_attachments": true,
+          "cost_per_1m_out": 4.4
+        },
+        {
+          "name": "GLM 5.2 (none)",
+          "id": "glm",
+          "can_reason": true,
+          "context_window": 655360,
+          "cost_per_1m_in": 1.4,
+          "supports_attachments": true,
           "cost_per_1m_out": 4.4
         },
         {
           "name": "DeepSeek V4 Flash (no thinking)",
           "id": "deepseek",
           "can_reason": false,
-          "context_window": 1000000,
+          "context_window": 1048576,
           "cost_per_1m_in": 0.14,
           "cost_per_1m_out": 0.28
         },
@@ -95,11 +103,12 @@
           "id": "deepseek-max",
           "default_reasoning_effort": "max",
           "reasoning_levels": [
-            "max",
-            "high"
+            "low",
+            "high",
+            "max"
           ],
           "can_reason": true,
-          "context_window": 1000000,
+          "context_window": 1048576,
           "cost_per_1m_in": 0.14,
           "cost_per_1m_out": 0.28
         }

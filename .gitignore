@@ -12,3 +12,6 @@ Thumbs.db
 # Test artifacts
 test-home/
 .bash_history
+
+# Python bytecode (vlook)
+__pycache__/

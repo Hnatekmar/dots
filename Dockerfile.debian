@@ -1,9 +1,7 @@
-FROM fedora:latest
+FROM debian:bookworm
 
 # Prerequisites for bootstrap: downloads, checksum parsing, cargo/go compiles, stow.
-# bootstrap.sh also installs these at runtime, but having them baked in speeds
-# rebuilds and avoids network during the RUN.
-RUN dnf install -y \
+RUN apt-get update -qq && apt-get install -y \
         git \
         curl \
         tar \
@@ -12,22 +10,21 @@ RUN dnf install -y \
         gcc \
         make \
         stow \
-        && dnf clean all
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
 
 # Copy repo into the image
 COPY . /dots
 
 WORKDIR /dots
 
-# Remove Fedora's default dotfiles that conflict with stow targets
+# Debian's default dotfiles that conflict with stow targets
 RUN rm -f /root/.bash_profile /root/.profile
 
 # Ensure Go and go-installed binaries are in PATH for feature installers
 ENV PATH=/usr/local/go/bin:/usr/local/bin:/root/go/bin:/root/.cargo/bin:$PATH
 
-# Run the full bootstrap at build time.
-# If any feature installer fails, the build fails — this is the CI gate.
+# Run the full bootstrap at build time — CI gate.
 RUN bash bootstrap.sh
 
-# Drop into a shell for interactive debugging
 CMD ["bash"]

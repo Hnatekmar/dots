@@ -3,85 +3,42 @@ set -euo pipefail
 
 source "$(dirname "$0")/../utils.sh"
 
-LAZYGIT_VERSION="0.63.1"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-if check_command_version nvim "0.10"; then
-    echo "==> nvim >= 0.10 already installed, skipping"
-else
-    echo "==> Installing neovim dependency..."
-    bash "$(dirname "$0")/../00_neovim/install.sh"
-fi
+# Delegate to the features lazyvim depends on (00_go first: lazygit and gopls are
+# built with go, so --only 03_lazyvim must still work standalone)
+for dep in 00_go 00_neovim 02_ripgrep 02_fd 03_lazygit; do
+    echo "==> Ensuring dependency: $dep"
+    bash "$SCRIPT_DIR/../$dep/install.sh"
+done
 
-# Install lazygit from prebuilt binary
-if command -v lazygit &>/dev/null; then
-    echo "==> lazygit already installed, skipping"
-else
-    echo "==> Installing lazygit..."
-
-    # Detect architecture
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)  ARCH="x86_64" ;;
-        aarch64) ARCH="arm64" ;;
-        *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
-    esac
-
-    TMP_FOLDER=$(mktemp -d)
-
-    # Download in a subshell to avoid changing cwd
-    (
-        cd "$TMP_FOLDER"
-        curl -LO "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz"
-        tar -xzf "lazygit_${LAZYGIT_VERSION}_linux_${ARCH}.tar.gz" -C /usr/local/bin lazygit
-    )
-
-    rm -rf "$TMP_FOLDER"
-fi
-
-# Install ripgrep
-if command -v rg &>/dev/null; then
-    echo "==> ripgrep already installed, skipping"
-else
-    echo "==> Installing ripgrep..."
-    dnf install -y ripgrep
-fi
-
-# Install fd-find
-if command -v fd &>/dev/null; then
-    echo "==> fd already installed, skipping"
-else
-    echo "==> Installing fd-find..."
-    dnf install -y fd-find
-    # Link fdfind to fd (Fedora packages it as fdfind)
-    if command -v fdfind &>/dev/null; then
-        ln -sf "$(which fdfind)" /usr/local/bin/fd
-    fi
-fi
-
-# Install gopls for Go LSP
+# Install gopls for Go LSP (pinned for reproducible installs)
+GOPSL_VERSION=0.23.0
 if ! command -v gopls &>/dev/null; then
     echo "==> Installing gopls..."
-    go install golang.org/x/tools/gopls@latest
+    go install "golang.org/x/tools/gopls@v${GOPSL_VERSION}"
 fi
 
 # Initialize lazyvim submodule
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAZYVIM_DIR="$SCRIPT_DIR/lazyvim"
 
-# Check if submodule has actual content (not just a gitdir pointer)
 if [ ! -d "$LAZYVIM_DIR" ] || [ -z "$(ls -A "$LAZYVIM_DIR" 2>/dev/null | grep -v '^\.git$')" ]; then
     echo "==> Initializing lazyvim submodule..."
     DOTS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-    # Try git submodule update first (works when .git is intact)
     if (cd "$DOTS_ROOT" && git submodule update --init --recursive 2>/dev/null); then
         :
     else
-        # Fallback: clone directly from .gitmodules URL (Docker, tarball, etc.)
         echo "==> git submodule update failed, cloning directly..."
-        SUBMODULE_URL=$(grep -A1 'submodule "features/03_lazyvim/lazyvim"' "$DOTS_ROOT/.gitmodules" | grep url | sed 's/.*= //')
-        rm -rf "$LAZYVIM_DIR"
-        git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"
+        # Uses -A3 so the url line (3 lines after the [submodule] header) is kept
+        SUBMODULE_URL=$(grep -A3 'lazyvim"' "$DOTS_ROOT/.gitmodules" | sed -n 's/.*url *= *//p')
+        if [ -n "$SUBMODULE_URL" ]; then
+            rm -rf "$LAZYVIM_DIR"
+            git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"
+        else
+            echo "ERROR: could not determine lazyvim submodule URL from .gitmodules" >&2
+            exit 1
+        fi
     fi
 fi
 

@@ -30,7 +30,17 @@ curl -LO "https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSIO
 curl -LO "https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSION}/checksums.txt"
 
 echo "==> Verifying checksum..."
-sha256sum --ignore-missing --check checksums.txt
+# Pull the expected hash for our exact tarball out of checksums.txt. This fails
+# hard if the tarball isn't listed (unlike `sha256sum --ignore-missing`, which
+# would silently pass if the name ever stopped matching).
+EXPECTED=$(awk -v f="$TARBALL" '$2 == f {print $1}' checksums.txt)
+ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
+if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "ERROR: Checksum mismatch for $TARBALL" >&2
+    echo "  Expected: ${EXPECTED:-<not listed in checksums.txt>}" >&2
+    echo "  Actual:   $ACTUAL" >&2
+    exit 1
+fi
 
 tar -xzf "$TARBALL"
 
