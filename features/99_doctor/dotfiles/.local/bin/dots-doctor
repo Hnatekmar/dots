@@ -1,0 +1,59 @@
+#!/bin/bash
+set -euo pipefail
+
+# dots-doctor — run BATS test suites to validate the dots installation.
+# Self-locates the repo via the symlink and runs all .bats files in tests/.
+
+# If invoked via sudo, operate on the invoking user's home, not /root.
+if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    export HOME
+fi
+
+# Resolve real path (follows the symlink back into the repo)
+SCRIPT_REAL="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_REAL")"
+dir="$SCRIPT_DIR"
+DOTS_ROOT=""
+while [ "$dir" != "/" ]; do
+    if [ -f "$dir/bootstrap.sh" ]; then
+        DOTS_ROOT="$dir"
+        break
+    fi
+    dir="$(dirname "$dir")"
+done
+
+if [ -z "$DOTS_ROOT" ]; then
+    echo "ERROR: could not locate dots repo (no bootstrap.sh found above $SCRIPT_REAL)" >&2
+    exit 1
+fi
+
+BATS_BIN="$HOME/.local/opt/bats-core/bin/bats"
+TESTS_DIR="$DOTS_ROOT/features/99_doctor/tests"
+
+if [ ! -x "$BATS_BIN" ]; then
+    echo "ERROR: bats not found at $BATS_BIN" >&2
+    echo "       Run 'bash features/99_doctor/install.sh' to install." >&2
+    exit 1
+fi
+
+if [ ! -d "$TESTS_DIR" ]; then
+    echo "ERROR: tests directory not found at $TESTS_DIR" >&2
+    exit 1
+fi
+
+# Collect all .bats files
+BATS_FILES=()
+while IFS= read -r f; do
+    BATS_FILES+=("$f")
+done < <(find "$TESTS_DIR" -name '*.bats' -print | sort)
+
+if [ "${#BATS_FILES[@]}" -eq 0 ]; then
+    echo "ERROR: no .bats files found in $TESTS_DIR" >&2
+    exit 1
+fi
+
+echo "Running dots-doctor (${#BATS_FILES[@]} test suite(s))..."
+echo
+
+exec "$BATS_BIN" "${BATS_FILES[@]}"

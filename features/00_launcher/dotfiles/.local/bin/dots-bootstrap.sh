@@ -3,15 +3,17 @@ set -euo pipefail
 
 # dots-bootstrap.sh — ergonomic entry point for updating/reinstalling tools.
 # Stowed into ~/.local/bin by the 00_launcher feature.
-# Self-locates the repo via the stow symlink and runs feature installers.
+# Self-locates the repo via the symlink and runs feature installers.
 
 # If invoked via sudo, operate on the invoking user's home, not /root.
+# Not needed for tool installation (everything is user-scoped now), but kept
+# so symlinked dotfiles still target the invoking user's home when run via sudo.
 if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
     HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     export HOME
 fi
 
-# Resolve real path (follows the stow symlink back into the repo)
+# Resolve real path (follows the symlink back into the repo)
 SCRIPT_REAL="$(readlink -f "$0")"
 dir="$(dirname "$SCRIPT_REAL")"
 DOTS_ROOT=""
@@ -59,7 +61,7 @@ while [ $# -gt 0 ]; do
 done
 
 export DOTS_FORCE
-export PATH="/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 
 run_feature() {
     local feature_dir="$1"

@@ -46,8 +46,8 @@ fi
 chmod +x "$TMP_FOLDER/rustup-init"
 
 # Minimal profile: rustc + cargo + rust-std (no docs/clippy) for faster install.
-# --no-modify-path: bootstrap.sh and the stowed .profile already add ~/.cargo/bin
-# to PATH; this also prevents rustup from appending to the stowed ~/.profile
+# --no-modify-path: bootstrap.sh and the symlinked .profile already add ~/.cargo/bin
+# to PATH; this also prevents rustup from appending to the symlinked ~/.profile
 # symlink (which would mutate the repo source file).
 "$TMP_FOLDER/rustup-init" -y --profile minimal --default-toolchain stable --no-modify-path
 

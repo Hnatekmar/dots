@@ -56,8 +56,9 @@ if [ "$EXPECTED" != "$ACTUAL" ]; then
 fi
 
 # Download and verify succeeded — safe to remove old install
-rm -rf /usr/local/bin/nvim /usr/local/share/nvim /usr/local/lib/nvim
+rm -rf "$HOME/.local/bin/nvim" "$HOME/.local/share/nvim" "$HOME/.local/lib/nvim"
 
-tar -xzf "$TARBALL" -C /usr/local --strip-components=1
+mkdir -p "$HOME/.local"
+tar -xzf "$TARBALL" -C "$HOME/.local" --strip-components=1
 
 echo "==> Neovim $NEOVIM_VERSION installed."

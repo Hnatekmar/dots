@@ -24,24 +24,25 @@ version_gte() {
     return 0
 }
 
-# Stow a package, first backing up any existing real file it would replace.
-# GNU stow >= 2.4 "adopts" an existing unmanaged target into the package
-# directory, which would silently overwrite the repo's curated dotfiles.
+# Symlink a package's dotfiles into $HOME, first backing up any existing real
+# file it would replace. Replaces GNU stow with a minimal per-file symlink loop.
 stow_pkg() {
     local dotfiles_dir="$1"
     local pkg="$2"
     local now
     now="$(date +%Y%m%d%H%M%S)"
 
+    # Resolve to absolute path so symlinks remain valid from any cwd.
+    dotfiles_dir="$(cd "$dotfiles_dir" && pwd)"
+
     # Process substitution keeps the loop in the current shell so `local` is legal.
     while IFS= read -r f; do
         local rel="${f#*/}"
         local target="$HOME/$rel"
 
-        # Skip if the target or any parent dir is already a stow symlink. stow links
-        # a whole package subdir (e.g. ~/.config/crush) as one symlink into the
-        # repo, so checking only the leaf would walk into it and treat the repo's own
-        # files as "existing", then mv them to .bak (mutating curated dotfiles).
+        # Skip if the target or any parent dir is already a symlink to the repo
+        # (managed by a previous stow_pkg run). This prevents walking into an
+        # existing symlink and treating the repo's own files as "existing".
         local skip=0
         local check="$HOME"
         local rem="$rel"
@@ -58,9 +59,11 @@ stow_pkg() {
             echo "==> Backing up existing $target to $target.bak.$now"
             mv "$target" "$target.bak.$now"
         fi
-    done < <(cd "$dotfiles_dir" && find "$pkg" \( -type f -o -type l \) -print)
 
-    (cd "$dotfiles_dir" && stow -t "$HOME" -R "$pkg")
+        # Create parent directories and symlink the file into $HOME.
+        mkdir -p "$(dirname "$target")"
+        ln -sfn "$dotfiles_dir/$f" "$target"
+    done < <(cd "$dotfiles_dir" && find "$pkg" \( -type f -o -type l \) -print)
 }
 
 check_command_version() {

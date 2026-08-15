@@ -1,6 +1,6 @@
 # dots
 
-GNU Stow-based dotfiles and tool bootstrap for Linux. Installs and configures development tools via a feature system where each directory under `features/` is a self-contained installer.
+Dotfiles and tool bootstrap for Linux. Installs and configures development tools via a feature system where each directory under `features/` is a self-contained installer. Uses a built-in symlink function (no GNU stow dependency).
 
 Works on **Fedora**, **Debian/Ubuntu**, and **Arch**. The only distro-specific code is the prerequisite install in `bootstrap.sh`; every tool is built from source (`go install` / `cargo install`) or downloaded as an upstream binary with checksum verification.
 
@@ -15,13 +15,13 @@ bash bootstrap.sh
 ## Prerequisites
 
 - A supported distro (dnf / apt-get / pacman)
-- Root access (installs to `/usr/local`, uses `stow` into `$HOME`)
+- Root access only for installing system packages (git, curl, zsh, etc.); all tools install into `$HOME` (e.g. `~/.local/`, `~/.cargo/`, `~/go/bin/`)
 
-`bootstrap.sh` installs `git curl tar findutils python3 gcc make stow` via your distro's package manager, then builds everything else from source.
+`bootstrap.sh` installs `git curl tar findutils python3 gcc make zsh` via your distro's package manager (when run as root), then builds everything else from source.
 
 ## Updating
 
-After `git pull`, re-run bootstrap, or use the ergonomic launcher (stowed into `~/.local/bin`):
+After `git pull`, re-run bootstrap, or use the ergonomic launcher (symlinked into `~/.local/bin`):
 
 ```bash
 dots-bootstrap.sh               # re-run all features (skips up-to-date tools)
@@ -34,10 +34,10 @@ dots-bootstrap.sh --list        # list available features
 
 | Dir | Feature | Installs |
 |-----|---------|----------|
-| `00_base` | Shell config | `.bash_profile`, `.profile` via Stow |
-| `00_go` | Go | Go 1.26.5 to `/usr/local/go` |
+| `00_base` | Shell config | `.bash_profile`, `.profile` via stow_pkg |
+| `00_go` | Go | Go 1.26.5 to `~/.local/go` |
 | `00_rust` | Rust | rustup + stable toolchain to `~/.cargo` |
-| `00_neovim` | Neovim | Neovim 0.12.4 to `/usr/local` |
+| `00_neovim` | Neovim | Neovim 0.12.4 to `~/.local` |
 | `00_launcher` | Launcher | `~/.local/bin/dots-bootstrap.sh` |
 | `01_gum` | Gum | charmbracelet/gum v0.16.2 via `go install` |
 | `02_crush` | Crush | Crush v0.87.0 + config (providers, MCP, LSP) |
@@ -46,41 +46,15 @@ dots-bootstrap.sh --list        # list available features
 | `03_lazygit` | lazygit | v0.63.1 via `go install` |
 | `03_lazyvim` | LazyVim | submodule + nvim symlink (delegates to neovim, ripgrep, fd, lazygit) |
 | `04_openbao` | OpenBao | OpenBao 2.6.1 binary |
-| `05_openbao-approle` | AppRole | AppRole bootstrap generator + `bao-auth` |
+| `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
 
-Features run in lexical order. Each feature is idempotent — re-running skips already-installed tools (use `--force` to override).
+Features run in lexical order. Each feature is idempotent — re-running skips already-installed tools (use `--force` to override). After installation, run `dots-doctor` to validate everything is working.
 
 ## Security
 
 ### Download verification
 
 Go, Neovim, OpenBao, and rustup downloads all verify SHA256 checksums before extracting. ripgrep, fd, gum, crush, and lazygit are built from source via `cargo`/`go` against pinned versions.
-
-### Secret management (OpenBao AppRole)
-
-The `05_openbao-approle` feature provides machine identity enrollment for servers:
-
-1. SSH into the server
-2. Authenticate with your operator token:
-   ```bash
-   bao login -method=oidc role=operator
-   ```
-3. Run the bootstrap:
-   ```bash
-   bash features/05_openbao-approle/bootstrap-approle.sh
-   ```
-
-This creates an AppRole named after the hostname, stores `role_id` and `secret_id` in `/etc/bao/`, **generates `~/.local/bin/bao-auth`** (a host-specific init script) and `~/.config/direnv/lib/bao.sh`, and **revokes the operator token**. Re-running is safe: it reuses an existing `secret_id` if the role still resolves, avoiding dangling credentials.
-
-Use the generated `bao-auth` to authenticate non-interactively:
-
-```bash
-source <(bao-auth)        # in shells / .envrc — exports VAULT_TOKEN
-TOKEN=$(bao-auth --token) # in scripts
-bao-auth --env            # print export lines
-```
-
-In any directory with an allowed `.envrc`, direnv auto-sources `lib/bao.sh` (no manual template copying needed).
 
 ## Testing
 
@@ -91,9 +65,10 @@ make test-fedora    # Fedora (default)
 make test-debian    # Debian bookworm
 make test-arch      # Arch
 make test-all       # all three
+make test-doctor    # run dots-doctor in the Fedora image
 ```
 
-Each smoke-tests that go, nvim, rg, fd, lazygit, cargo, and bao are present and runnable.
+Each image runs `bootstrap.sh` followed by `dots-doctor` (BATS test suites) at build time, so the build fails if any tool or test fails.
 
 Individual features (Fedora image):
 
@@ -120,22 +95,20 @@ dots/
 ├── Dockerfile.debian         # Debian bookworm test image
 ├── Dockerfile.arch           # Arch test image
 ├── features/
-│   ├── utils.sh               # Shared: version checks (DOTS_FORCE-aware) + stow_pkg
-│   ├── 00_base/               # Stows shell configs
+│   ├── utils.sh               # Shared: version checks (DOTS_FORCE-aware) + stow_pkg (built-in symlink fn)
+│   ├── 00_base/               # Symlinks shell configs into $HOME
 │   ├── 00_go/                 # Downloads + verifies + installs Go
 │   ├── 00_rust/               # rustup + stable toolchain
 │   ├── 00_neovim/             # Downloads + verifies + installs Neovim
-│   ├── 00_launcher/           # Stows dots-bootstrap.sh launcher
+│   ├── 00_launcher/           # Symlinks dots-bootstrap.sh launcher
 │   ├── 01_gum/                # go install gum
-│   ├── 02_crush/              # Stows config + go install crush
+│   ├── 02_crush/              # Symlinks config + go install crush
 │   ├── 02_ripgrep/            # cargo install ripgrep
 │   ├── 02_fd/                 # cargo install fd-find
 │   ├── 03_lazygit/            # go install lazygit
 │   ├── 03_lazyvim/            # submodule + nvim symlink (delegates to deps)
 │   ├── 04_openbao/            # Binary install with checksum verification
-│   └── 05_openbao-approle/
-│       ├── install.sh         # Ensures bao binary
-│       └── bootstrap-approle.sh  # Enrollment + bao-auth/direnv generator
+│   └── 99_doctor/             # BATS test suites + dots-doctor executable
 └── .gitmodules                # LazyVim submodule
 ```
 
@@ -157,5 +130,5 @@ dots/
 
    # Build from source (go install / cargo install) or download + verify...
    ```
-3. Add `dotfiles/` subdirectory for any config files to stow
+3. Add `dotfiles/` subdirectory for any config files to symlink into $HOME
 4. Test with `make build && make test-fedora`

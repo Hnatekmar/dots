@@ -20,9 +20,8 @@ bindkey -M vicmd '\es' sesh-sessions
 bindkey -M viins '\es' sesh-sessions
 set -o vi
 
-
 export ZSH="$HOME/.oh-my-zsh"
-export PATH=~/go/bin:$PATH
+export PATH="$HOME/.local/go/bin:$HOME/go/bin:$PATH"
 
 ZSH_THEME="3den"
 
@@ -58,13 +57,13 @@ export EDITOR=nvim
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 eval "$(zoxide init zsh)"
-export PATH=$PATH:~/.local/bin/:/home/martin/.bun/bin/:$HOME/.npm-global/bin
+export PATH="$HOME/.local/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
-export PATH=/home/martin/go/bin:$PATH
+export PATH="$HOME/go/bin:$PATH"
 
 fpath=(~/.zsh/completions $fpath)
 autoload -U compinit && compinit

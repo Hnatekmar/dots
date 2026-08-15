@@ -44,6 +44,7 @@ fi
 
 tar -xzf "$TARBALL"
 
-cp bao /usr/local/bin/
+mkdir -p "$HOME/.local/bin"
+cp bao "$HOME/.local/bin/"
 
 echo "==> OpenBao $OPENBAO_VERSION installed."

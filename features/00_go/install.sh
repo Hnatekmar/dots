@@ -56,8 +56,9 @@ if [ "$EXPECTED" != "$ACTUAL" ]; then
 fi
 
 # Download and verify succeeded — safe to remove old install
-rm -rf /usr/local/go
+rm -rf "$HOME/.local/go"
 
-tar -xzf "$TARBALL" -C /usr/local
+mkdir -p "$HOME/.local"
+tar -xzf "$TARBALL" -C "$HOME/.local"
 
 echo "==> Go $GO_VERSION installed."

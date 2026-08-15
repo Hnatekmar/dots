@@ -19,7 +19,8 @@ make test-fedora     # build + smoke-test all major tools (default)
 make test-debian
 make test-arch
 make test-all        # all three distros
-make test-base       # only verify stow'ed shell config
+make test-base       # only verify symlinked shell config
+make test-doctor     # run dots-doctor (BATS suites) in the Fedora image
 make test-go         # only verify Go install
 make test-neovim     # only verify Neovim install
 make shell           # interactive shell in the Fedora test container
@@ -28,8 +29,9 @@ make clean           # remove test images
 ```
 
 There is no unit test harness. The CI gate is the Docker build itself: each
-Dockerfile runs `bash bootstrap.sh` in its `RUN` step, so **any failing feature
-breaks the image build**. The `make test-*` targets then smoke-test the tools.
+Dockerfile runs `bash bootstrap.sh` followed by `dots-doctor` (BATS test suites)
+in `RUN` steps, so **any failing feature or test breaks the image build**.
+The `make test-*` targets re-run `dots-doctor` in the built image for a clean report.
 
 Note: `make build` / `make run` / `make test-*` are hardcoded to the Fedora
 image; only the `-debian`/`-arch` variants use the other images.
@@ -37,15 +39,19 @@ image; only the `-debian`/`-arch` variants use the other images.
 ## Running the bootstrap (without containers)
 
 ```bash
-bash bootstrap.sh                 # install prereqs + run every feature
+bash bootstrap.sh                 # check prereqs + run every feature
 bash features/00_go/install.sh    # run a single feature directly
+dots-doctor                       # run BATS test suites to validate installation
 ```
 
-Requires root (installs to `/usr/local`, stows into `$HOME`) and a supported
-distro (dnf / apt-get / pacman). When run via `sudo`, bootstrap operates on the
-invoking user's home (not `/root`). The ergonomic launcher is symlinked to
-`~/.local/bin/dots-bootstrap.sh` and supports `--force`, `--only <feature>`,
-and `--list`.
+All tools are installed into the user's home directory (`~/.local/`,
+`~/.local/go/`, `~/.cargo/`, `~/go/bin/`) — no root required for tool
+installation. The only system-level step is installing distro prerequisites
+(git, curl, zsh, etc.); when run as non-root, `bootstrap.sh` checks for
+these and errors with guidance if any are missing. When run as root (e.g. in
+Docker), it installs them via the distro package manager. The ergonomic
+launcher is symlinked to `~/.local/bin/dots-bootstrap.sh` and supports
+`--force`, `--only <feature>`, and `--list`.
 
 ## Architecture
 
@@ -56,36 +62,35 @@ dots/
 ├── Dockerfile(.debian/.arch) # Test images — each runs bootstrap.sh at build time
 ├── features/
 │   ├── utils.sh              # Shared: check_command_version + version_gte + stow_pkg (DOTS_FORCE-aware)
+│   │                          # stow_pkg is a built-in symlink function (no GNU stow dependency)
 │   ├── NN_feature/
 │   │   ├── install.sh        # The feature installer (run by bootstrap.sh)
-│   │   └── dotfiles/         # Optional: stow packages
-│   └── 05_openbao-approle/
-│       └── bootstrap-approle.sh  # Manual machine-identity enrollment (NOT run by default)
-└── scripts/.local/bin/vlook  # Image-inspection helper (Qwen3.6-VL via shell)
+│   │   └── dotfiles/         # Optional: packages symlinked into $HOME by stow_pkg
+│   └── 99_doctor/
+│       ├── install.sh        # Installs bats-core + symlinks dots-doctor
+│       ├── dotfiles/         # dots-doctor wrapper script
+│       └── tests/            # BATS test suites (tools, dotfiles, paths)
 ```
 
 ### Control flow
 
-1. `bootstrap.sh` sources `features/utils.sh`, installs distro prereqs, prepends
-   `/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin` to `PATH`, then loops over
-   `features/*/install.sh` **in lexical order** (00, 01, 02, ...).
+1. `bootstrap.sh` sources `features/utils.sh`, checks/installs distro prereqs,
+   prepends `$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin`
+   to `PATH`, then loops over `features/*/install.sh` **in lexical order**
+   (00, 01, 02, ...).
 2. Each `install.sh` sources `../utils.sh`, checks if already installed, and
    either skips or installs.
 3. `bootstrap.sh` and each installer run in a **subshell** (`(cd ... && bash
    install.sh)`), so exported variables do not leak between features — every
    feature must re-source what it needs.
 
-### `scripts/.local/bin/vlook`
-
-An independent Python helper (not a feature) that lets coding agents "see"
-images by routing them to a multimodel LLM endpoint. Env-configurable via
-`VLOOK_URL` / `VLOOK_MODEL`. Supports `ocr` and `scan` subcommands.
-
 ## Feature conventions (IMPORTANT)
 
-- **The only distro-specific code lives in `bootstrap.sh`** (prereq install).
-  All features must be fully distro-agnostic: build via `go install` /
-  `cargo install`, or download pinned upstream binaries.
+- **The only distro-specific code lives in `bootstrap.sh`** (prereq check/install).
+  All features must be fully distro-agnostic and install into `$HOME` (typically
+  `~/.local/`, `~/go/bin/`, `~/.cargo/bin/`): build via `go install` /
+  `cargo install`, or download pinned upstream binaries. No feature should write
+  to system paths like `/usr/local`.
 - Every `install.sh` must start with:
   ```bash
   #!/bin/bash
@@ -100,13 +105,12 @@ images by routing them to a multimodel LLM endpoint. Env-configurable via
   runs them in lexical order, so prefix matters for dependency ordering.
 - For `dotfiles/` subdirs, use `stow_pkg "$(dirname "$0")/dotfiles" <pkg>` (see
   `00_base` and `02_crush`). This backs up any existing real file the package would
-  replace before running `stow -t "$HOME" -R <pkg>` — important because GNU stow
-  >= 2.4 *adopts* an unmanaged target into the package dir, silently overwriting the
-  repo's curated dotfiles.
+  replace before symlinking it into `$HOME`. The built-in `stow_pkg` function in
+  `features/utils.sh` replaces GNU stow — no external `stow` binary is needed.
 - Features that depend on another tool explicitly invoke its installer by bash
-  (see `03_lazyvim` running `00_go`/`00_neovim`/`02_ripgrep`/`02_fd`/`03_lazygit`, and
-  `05_openbao-approle` running `04_openbao`). `go install`-ed tools compile at
-  install time and need the `go` feature to have run first.
+  (see `03_lazyvim` running `00_go`/`00_neovim`/`02_ripgrep`/`02_fd`/`03_lazygit`).
+  `go install`-ed tools compile at install time and need the `go` feature to have
+  run first.
 
 ## Gotchas & non-obvious patterns
 
@@ -124,15 +128,16 @@ images by routing them to a multimodel LLM endpoint. Env-configurable via
   - OpenBao: downloads a real `checksums.txt`, greps the hash for its exact
     tarball, and compares it to `sha256sum` output.
   - Go/Neovim remove the old install **only after** checksum verification passes
-    (`rm -rf /usr/local/go` after the check).
+    (`rm -rf "$HOME/.local/go"` / `rm -rf "$HOME/.local/bin/nvim ..."` after
+    the check). All tools install under `$HOME/.local/` — no root needed.
 - **rustup must be run with `--no-modify-path`** in `00_rust`. Otherwise it
-  appends to the *stowed* `~/.profile` symlink, which would mutate the repo's
-  source file. PATH is handled by bootstrap.sh and the stowed shell config.
+  appends to the *symlinked* `~/.profile` symlink, which would mutate the repo's
+  source file. PATH is handled by bootstrap.sh and the symlinked shell config.
   `rustup-init` is downloaded from `static.rust-lang.org` and its `.sha256`
   sibling is verified before execution.
 - **oh-my-zsh must be installed with `--keep-zshrc --unattended`** in
   `00_ohmyzsh`. The installer would otherwise write its template over the
-  *stowed* `~/.zshrc` (or wait on an interactive chsh prompt). `--keep-zshrc`
+  *symlinked* `~/.zshrc` (or wait on an interactive chsh prompt). `--keep-zshrc`
   preserves the repo's curated file; the external plugins `zsh-autosuggestions`
   and `zsh-syntax-highlighting` referenced in `~/.zshrc` are cloned into
   `$OH_MY_ZSH/custom/plugins` because they aren't bundled with oh-my-zsh.
@@ -147,21 +152,13 @@ images by routing them to a multimodel LLM endpoint. Env-configurable via
   initialized it falls back to a direct shallow clone of the URL parsed from
   `.gitmodules` (the clone fallback only runs outside a cloned `.git`, e.g. in
   the Docker build where `.dockerignore` drops `.git`).
-- The `05_openbao-approle/bootstrap-approle.sh` **mutates the live OpenBao
-  server** (creates an AppRole, stores credentials in `/etc/bao/`, revokes the
-  operator token). It is NOT run by `bootstrap.sh` — only its light-weight
-  `install.sh` (which just ensures the `bao` binary) is a feature. Never
-  auto-run `bootstrap-approle.sh`.
-- The upstream repo URL/VAULT_ADDR `https://bao.hnatekmar.xyz` is hardcoded as a
-  default in `bootstrap-approle.sh` via `${VAULT_ADDR:-...}`.
-
 ## Adding a new feature
 
 1. Create `features/NN_name/` (NN = lexical ordering number).
 2. Add `install.sh` following the conventions above (set -euo pipefail, source
    utils.sh, idempotency gate, `go install`/`cargo install` or verified download).
 3. Add a `check_command_version` branch in `features/utils.sh` for new tools.
-4. Add `dotfiles/` subdir if stowing config.
+4. Add `dotfiles/` subdir if symlinking config.
 5. (Optional) Add a `make test-<feature>` target and/or extend the smoke-test
    line in the `test-*` targets.
 6. Verify with `make build && make test-fedora` (or `make test-all`).
