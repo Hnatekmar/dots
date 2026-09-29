@@ -65,19 +65,10 @@ make test-fedora    # Fedora (default)
 make test-debian    # Debian bookworm
 make test-arch      # Arch
 make test-all       # all three
-make test-doctor    # run dots-doctor in the Fedora image
+make shell          # Interactive shell in the Fedora test container
 ```
 
 Each image runs `bootstrap.sh` followed by `dots-doctor` (BATS test suites) at build time, so the build fails if any tool or test fails.
-
-Individual features (Fedora image):
-
-```bash
-make test-base      # Shell config only
-make test-go        # Go install only
-make test-neovim    # Neovim install only
-make shell          # Interactive shell in test container
-```
 
 Lint all scripts with shellcheck:
 
@@ -91,9 +82,7 @@ make lint
 dots/
 ├── bootstrap.sh              # Entry point — installs prereqs, runs all features
 ├── Makefile                  # Docker-based testing (fedora/debian/arch)
-├── Dockerfile                # Fedora test image
-├── Dockerfile.debian         # Debian bookworm test image
-├── Dockerfile.arch           # Arch test image
+├── Dockerfile                # Test image (BASE build-arg: fedora default, debian, arch)
 ├── features/
 │   ├── utils.sh               # Shared: version checks (DOTS_FORCE-aware) + stow_pkg (built-in symlink fn)
 │   ├── 00_base/               # Symlinks shell configs into $HOME
@@ -114,7 +103,7 @@ dots/
 
 ## Adding a new feature
 
-1. Create `features/NN_name/` (NN = ordering number)
+1. Create `features/NN_name/` (NN = ordering number) — simplest is to copy an existing feature (e.g. `cp -r features/02_fd features/06_mytool`) and adapt it.
 2. Add `install.sh`:
    ```bash
    #!/bin/bash

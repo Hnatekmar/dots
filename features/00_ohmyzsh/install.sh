@@ -17,16 +17,11 @@ fi
 PLUGIN_DIR="$OH_MY_ZSH_DIR/custom/plugins"
 mkdir -p "$PLUGIN_DIR"
 
-if [ ! -d "$PLUGIN_DIR/zsh-autosuggestions" ]; then
-    echo "==> Installing zsh-autosuggestions..."
-    git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions "$PLUGIN_DIR/zsh-autosuggestions"
-else
-    echo "==> zsh-autosuggestions already installed, skipping"
-fi
-
-if [ ! -d "$PLUGIN_DIR/zsh-syntax-highlighting" ]; then
-    echo "==> Installing zsh-syntax-highlighting..."
-    git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting "$PLUGIN_DIR/zsh-syntax-highlighting"
-else
-    echo "==> zsh-syntax-highlighting already installed, skipping"
-fi
+for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+    if [ ! -d "$PLUGIN_DIR/$plugin" ]; then
+        echo "==> Installing $plugin..."
+        git clone --depth 1 "https://github.com/zsh-users/$plugin" "$PLUGIN_DIR/$plugin"
+    else
+        echo "==> $plugin already installed, skipping"
+    fi
+done

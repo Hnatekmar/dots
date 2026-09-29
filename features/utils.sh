@@ -1,27 +1,11 @@
 #!/bin/bash
 
-# Version comparison: returns 0 if installed >= required, 1 otherwise
+# Version comparison: returns 0 if installed >= required, 1 otherwise.
+# `sort -V` handles multi-digit components correctly (0.9 < 0.87, 1.9 < 1.26).
+# ponytail: version-sort semantics, so 2 < 2.0; all pinned versions are 3-component.
 version_gte() {
-    local installed="$1"
-    local required="$2"
-
-    [[ -z "$required" ]] && return 0
-
-    local IFS='.'
-    read -r -a inst_parts <<< "$installed"
-    read -r -a req_parts <<< "$required"
-
-    local max=${#req_parts[@]}
-    (( ${#inst_parts[@]} > max )) && max=${#inst_parts[@]}
-
-    # 10# forces decimal: avoids octal errors on leading-zero parts like "08"
-    for ((i = 0; i < max; i++)); do
-        local inst=${inst_parts[$i]:-0}
-        local req=${req_parts[$i]:-0}
-        if ((10#$inst > 10#$req)); then return 0; fi
-        if ((10#$inst < 10#$req)); then return 1; fi
-    done
-    return 0
+    [[ -z "$2" ]] && return 0
+    [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | tail -1)" = "$1" ]
 }
 
 # Symlink a package's dotfiles into $HOME, first backing up any existing real
@@ -66,6 +50,29 @@ stow_pkg() {
     done < <(cd "$dotfiles_dir" && find "$pkg" \( -type f -o -type l \) -print)
 }
 
+# Verify a downloaded file against an expected SHA256 hex digest. Exits on mismatch.
+verify_sha256() {
+    local file="$1"
+    local expected="$2"
+    local actual
+    actual="$(sha256sum "$file" | cut -d' ' -f1)"
+    if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+        echo "ERROR: checksum mismatch for $file" >&2
+        echo "  Expected: ${expected:-<none>}" >&2
+        echo "  Actual:   $actual" >&2
+        exit 1
+    fi
+}
+
+# Map `uname -m` to tool-specific target names: map_arch <x86_64-name> <aarch64-name>
+map_arch() {
+    case "$(uname -m)" in
+        x86_64)  echo "$1" ;;
+        aarch64) echo "$2" ;;
+        *) echo "ERROR: Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+    esac
+}
+
 check_command_version() {
     local cmd="$1"
     local expected="$2"
@@ -98,15 +105,6 @@ check_command_version() {
             ;;
         fd)
             actual=$(fd --version 2>/dev/null | head -1 | sed -n 's/fd \([0-9][0-9.]*\).*/\1/p')
-            ;;
-        lazygit)
-            actual=$(lazygit --version 2>/dev/null | sed -n 's/.*version=\([0-9][0-9.]*\).*/\1/p' | head -1)
-            ;;
-        cargo)
-            actual=$(cargo --version 2>/dev/null | sed -n 's/cargo \([0-9][0-9.]*\).*/\1/p')
-            ;;
-        *)
-            actual=$("$cmd" --version 2>/dev/null | head -1 | sed -n 's/.*\([0-9][0-9.]*\).*/\1/p')
             ;;
     esac
 

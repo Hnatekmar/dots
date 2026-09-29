@@ -30,8 +30,7 @@ if [ ! -d "$LAZYVIM_DIR" ] || [ -z "$(ls -A "$LAZYVIM_DIR" 2>/dev/null | grep -v
         :
     else
         echo "==> git submodule update failed, cloning directly..."
-        # Uses -A3 so the url line (3 lines after the [submodule] header) is kept
-        SUBMODULE_URL=$(grep -A3 'lazyvim"' "$DOTS_ROOT/.gitmodules" | sed -n 's/.*url *= *//p')
+        SUBMODULE_URL=$(git config -f "$DOTS_ROOT/.gitmodules" submodule.features/03_lazyvim/lazyvim.url)
         if [ -n "$SUBMODULE_URL" ]; then
             rm -rf "$LAZYVIM_DIR"
             git clone --depth 1 "$SUBMODULE_URL" "$LAZYVIM_DIR"

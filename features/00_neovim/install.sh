@@ -6,12 +6,7 @@ source "$(dirname "$0")/../utils.sh"
 NEOVIM_VERSION="0.12.4"
 
 # Detect architecture
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  ARCH=x86_64 ;;
-    aarch64) ARCH=arm64 ;;
-    *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
-esac
+ARCH="$(map_arch x86_64 arm64)"
 
 if check_command_version nvim "$NEOVIM_VERSION"; then
     echo "==> nvim $NEOVIM_VERSION already installed, skipping"
@@ -42,18 +37,7 @@ for a in data.get('assets', []):
         break
 ")
 
-if [ -z "$EXPECTED" ]; then
-    echo "ERROR: Could not fetch Neovim checksum from GitHub API" >&2
-    exit 1
-fi
-
-ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
-if [ "$EXPECTED" != "$ACTUAL" ]; then
-    echo "ERROR: Checksum mismatch for $TARBALL" >&2
-    echo "  Expected: $EXPECTED" >&2
-    echo "  Actual:   $ACTUAL" >&2
-    exit 1
-fi
+verify_sha256 "$TARBALL" "$EXPECTED"
 
 # Download and verify succeeded — safe to remove old install
 rm -rf "$HOME/.local/bin/nvim" "$HOME/.local/share/nvim" "$HOME/.local/lib/nvim"

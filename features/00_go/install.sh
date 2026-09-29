@@ -6,12 +6,7 @@ source "$(dirname "$0")/../utils.sh"
 GO_VERSION=1.26.5
 
 # Detect architecture
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  ARCH=amd64 ;;
-    aarch64) ARCH=arm64 ;;
-    *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
-esac
+ARCH="$(map_arch amd64 arm64)"
 
 if check_command_version go "$GO_VERSION"; then
     echo "==> go $GO_VERSION already installed, skipping"
@@ -42,18 +37,7 @@ for r in json.load(sys.stdin):
         break
 ")
 
-if [ -z "$EXPECTED" ]; then
-    echo "ERROR: Could not fetch Go checksum" >&2
-    exit 1
-fi
-
-ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
-if [ "$EXPECTED" != "$ACTUAL" ]; then
-    echo "ERROR: Checksum mismatch for $TARBALL" >&2
-    echo "  Expected: $EXPECTED" >&2
-    echo "  Actual:   $ACTUAL" >&2
-    exit 1
-fi
+verify_sha256 "$TARBALL" "$EXPECTED"
 
 # Download and verify succeeded — safe to remove old install
 rm -rf "$HOME/.local/go"

@@ -1,5 +1,4 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+
 
 
 function sesh-sessions() {
@@ -63,8 +62,5 @@ HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory
 
-export PATH="$HOME/go/bin:$PATH"
-
 fpath=(~/.zsh/completions $fpath)
 autoload -U compinit && compinit
-autoload -U compinit; compinit

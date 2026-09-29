@@ -6,12 +6,7 @@ source "$(dirname "$0")/../utils.sh"
 OPENBAO_VERSION=2.6.1
 
 # Detect architecture
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  ARCH=amd64 ;;
-    aarch64) ARCH=arm64 ;;
-    *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
-esac
+ARCH="$(map_arch amd64 arm64)"
 
 if check_command_version bao "$OPENBAO_VERSION"; then
     echo "==> openbao $OPENBAO_VERSION already installed, skipping"
@@ -34,13 +29,7 @@ echo "==> Verifying checksum..."
 # hard if the tarball isn't listed (unlike `sha256sum --ignore-missing`, which
 # would silently pass if the name ever stopped matching).
 EXPECTED=$(awk -v f="$TARBALL" '$2 == f {print $1}' checksums.txt)
-ACTUAL=$(sha256sum "$TARBALL" | cut -d' ' -f1)
-if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
-    echo "ERROR: Checksum mismatch for $TARBALL" >&2
-    echo "  Expected: ${EXPECTED:-<not listed in checksums.txt>}" >&2
-    echo "  Actual:   $ACTUAL" >&2
-    exit 1
-fi
+verify_sha256 "$TARBALL" "$EXPECTED"
 
 tar -xzf "$TARBALL"
 

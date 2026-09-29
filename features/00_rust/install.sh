@@ -17,13 +17,7 @@ if command -v cargo >/dev/null 2>&1; then
     exit 0
 fi
 
-# Map machine arch to a rustup target triple
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  RUSTUP_TARGET="x86_64-unknown-linux-gnu" ;;
-    aarch64)  RUSTUP_TARGET="aarch64-unknown-linux-gnu" ;;
-    *) echo "ERROR: Unsupported architecture: $ARCH" >&2; exit 1 ;;
-esac
+RUSTUP_TARGET="$(map_arch x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu)"
 
 TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
@@ -35,13 +29,7 @@ curl --proto '=https' --tlsv1.2 -sSfL "$RUSTUP_BASE/rustup-init.sha256" -o "$TMP
 
 echo "==> Verifying rustup-init checksum..."
 EXPECTED=$(cut -d' ' -f1 "$TMP_FOLDER/rustup-init.sha256")
-ACTUAL=$(sha256sum "$TMP_FOLDER/rustup-init" | cut -d' ' -f1)
-if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
-    echo "ERROR: rustup-init checksum mismatch" >&2
-    echo "  Expected: $EXPECTED" >&2
-    echo "  Actual:   $ACTUAL" >&2
-    exit 1
-fi
+verify_sha256 "$TMP_FOLDER/rustup-init" "$EXPECTED"
 
 chmod +x "$TMP_FOLDER/rustup-init"
 

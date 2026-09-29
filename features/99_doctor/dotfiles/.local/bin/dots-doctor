@@ -10,23 +10,10 @@ if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]
     export HOME
 fi
 
-# Resolve real path (follows the symlink back into the repo)
-SCRIPT_REAL="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_REAL")"
-dir="$SCRIPT_DIR"
-DOTS_ROOT=""
-while [ "$dir" != "/" ]; do
-    if [ -f "$dir/bootstrap.sh" ]; then
-        DOTS_ROOT="$dir"
-        break
-    fi
-    dir="$(dirname "$dir")"
-done
-
-if [ -z "$DOTS_ROOT" ]; then
-    echo "ERROR: could not locate dots repo (no bootstrap.sh found above $SCRIPT_REAL)" >&2
-    exit 1
-fi
+# Resolve real path (follows the symlink back into the repo). The layout is
+# fixed, so go up 5 levels: .local/bin -> dotfiles -> 99_doctor -> features -> repo.
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+DOTS_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 
 BATS_BIN="$HOME/.local/opt/bats-core/bin/bats"
 TESTS_DIR="$DOTS_ROOT/features/99_doctor/tests"
@@ -42,18 +29,7 @@ if [ ! -d "$TESTS_DIR" ]; then
     exit 1
 fi
 
-# Collect all .bats files
-BATS_FILES=()
-while IFS= read -r f; do
-    BATS_FILES+=("$f")
-done < <(find "$TESTS_DIR" -name '*.bats' -print | sort)
-
-if [ "${#BATS_FILES[@]}" -eq 0 ]; then
-    echo "ERROR: no .bats files found in $TESTS_DIR" >&2
-    exit 1
-fi
-
-echo "Running dots-doctor (${#BATS_FILES[@]} test suite(s))..."
+echo "Running dots-doctor..."
 echo
 
-exec "$BATS_BIN" "${BATS_FILES[@]}"
+exec "$BATS_BIN" -r "$TESTS_DIR"

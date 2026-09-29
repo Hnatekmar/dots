@@ -1,4 +1,4 @@
-.PHONY: test clean build run shell lint test-go test-neovim test-base test-doctor \
+.PHONY: clean build shell lint \
         build-fedora build-debian build-arch \
         test-fedora test-debian test-arch test-all
 
@@ -18,10 +18,10 @@ build:
 build-fedora: build
 
 build-debian:
-	$(CONTAINER) build -t $(IMAGE_DEBIAN) -f Dockerfile.debian .
+	$(CONTAINER) build -t $(IMAGE_DEBIAN) --build-arg BASE=debian:bookworm -f Dockerfile .
 
 build-arch:
-	$(CONTAINER) build -t $(IMAGE_ARCH) -f Dockerfile.arch .
+	$(CONTAINER) build -t $(IMAGE_ARCH) --build-arg BASE=archlinux:latest -f Dockerfile .
 
 # ── Tests (per distro) ──
 #
@@ -40,34 +40,14 @@ test-arch: build-arch
 
 test-all: test-fedora test-debian test-arch
 
-# Back-compat aliases
-run: build
-	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version && nvim --version | head -1 && bao version | head -1'
-
 # Drop into a shell in the test container for debugging
 shell: build
 	$(CONTAINER) run --rm -it $(IMAGE) /bin/bash
 
-# Run dots-doctor in the Fedora image (alias for test-fedora's doctor)
-test-doctor: build
-	$(CONTAINER) run --rm $(IMAGE) dots-doctor
-
-# Test only the base feature (symlinked dotfiles)
-test-base: build
-	$(CONTAINER) run --rm $(IMAGE) bash -c 'cat ~/.bash_profile && echo "---" && cat ~/.profile'
-
-# Test only the Go install
-test-go: build
-	$(CONTAINER) run --rm $(IMAGE) bash -c 'go version'
-
-# Test only the Neovim install
-test-neovim: build
-	$(CONTAINER) run --rm $(IMAGE) bash -c 'nvim --version | head -1'
-
 # Run shellcheck on all scripts (if shellcheck is installed locally)
 lint:
 	@which shellcheck >/dev/null 2>&1 || { echo "Install shellcheck (dnf/apt/pacman: shellcheck)"; exit 1; }
-	shellcheck bootstrap.sh features/*/install.sh features/utils.sh features/00_launcher/dotfiles/.local/bin/dots-bootstrap.sh features/99_doctor/dotfiles/.local/bin/dots-doctor
+	shellcheck bootstrap.sh features/*/install.sh features/utils.sh features/99_doctor/dotfiles/.local/bin/dots-doctor
 
 # Clean up test images
 clean:

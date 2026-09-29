@@ -1,10 +1,45 @@
 #!/bin/bash
 set -euo pipefail
 
-DOTS_ROOT="$(cd "$(dirname "$0")" && pwd)"
+DOTS_ROOT="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
-# shellcheck source=features/utils.sh
-source "$DOTS_ROOT/features/utils.sh"
+# If invoked via sudo, operate on the invoking user's home, not /root.
+if [ "$(id -u)" = "0" ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+    export HOME
+fi
+
+DOTS_FORCE="${DOTS_FORCE:-0}"
+ONLY=""
+
+usage() {
+    cat <<EOF
+Usage: dots-bootstrap.sh [--force] [--only <feature>] [--list]
+
+  --force          Reinstall all tools even if version checks pass.
+  --only <feature> Run a single feature (e.g. 00_go, 02_ripgrep).
+  --list           Print available features and exit.
+
+  DOTS_FORCE=1 in the environment is equivalent to --force.
+EOF
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --force) DOTS_FORCE=1; shift ;;
+        --only)  ONLY="${2:-}"; shift 2 ;;
+        --list)
+            for d in "$DOTS_ROOT"/features/*/; do
+                [ -f "$d/install.sh" ] && basename "$d"
+            done
+            exit 0
+            ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
+    esac
+done
+
+export DOTS_FORCE
 
 # Install build prerequisites. Names differ slightly per distro
 # (python vs python3), so handle them explicitly in one place. Everything
@@ -44,9 +79,21 @@ fi
 export PATH="$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 
 # Run feature installers in lexical order
-for feature_dir in "$DOTS_ROOT"/features/*/; do
-    [ -d "$feature_dir" ] && [ -f "$feature_dir/install.sh" ] && {
-        echo "==> Installing feature: $(basename "$feature_dir")"
-        (cd "$feature_dir" && bash install.sh)
-    }
-done
+run_feature() {
+    local feature_dir="$1"
+    echo "==> Installing feature: $(basename "$feature_dir")"
+    (cd "$feature_dir" && bash install.sh)
+}
+
+if [ -n "$ONLY" ]; then
+    feature_dir="$DOTS_ROOT/features/$ONLY"
+    if [ ! -d "$feature_dir" ] || [ ! -f "$feature_dir/install.sh" ]; then
+        echo "ERROR: feature '$ONLY' not found. Use --list to see options." >&2
+        exit 1
+    fi
+    run_feature "$feature_dir"
+else
+    for feature_dir in "$DOTS_ROOT"/features/*/; do
+        [ -d "$feature_dir" ] && [ -f "$feature_dir/install.sh" ] && run_feature "$feature_dir"
+    done
+fi

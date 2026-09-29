@@ -19,10 +19,6 @@ make test-fedora     # build + smoke-test all major tools (default)
 make test-debian
 make test-arch
 make test-all        # all three distros
-make test-base       # only verify symlinked shell config
-make test-doctor     # run dots-doctor (BATS suites) in the Fedora image
-make test-go         # only verify Go install
-make test-neovim     # only verify Neovim install
 make shell           # interactive shell in the Fedora test container
 make lint            # shellcheck on all scripts (needs local shellcheck)
 make clean           # remove test images
@@ -33,8 +29,8 @@ Dockerfile runs `bash bootstrap.sh` followed by `dots-doctor` (BATS test suites)
 in `RUN` steps, so **any failing feature or test breaks the image build**.
 The `make test-*` targets re-run `dots-doctor` in the built image for a clean report.
 
-Note: `make build` / `make run` / `make test-*` are hardcoded to the Fedora
-image; only the `-debian`/`-arch` variants use the other images.
+Note: `make build` / `make test-*` default to the Fedora image; `test-debian`
+and `test-arch` pass `--build-arg BASE=...` to the same Dockerfile.
 
 ## Running the bootstrap (without containers)
 
@@ -49,9 +45,10 @@ All tools are installed into the user's home directory (`~/.local/`,
 installation. The only system-level step is installing distro prerequisites
 (git, curl, zsh, etc.); when run as non-root, `bootstrap.sh` checks for
 these and errors with guidance if any are missing. When run as root (e.g. in
-Docker), it installs them via the distro package manager. The ergonomic
-launcher is symlinked to `~/.local/bin/dots-bootstrap.sh` and supports
-`--force`, `--only <feature>`, and `--list`.
+Docker), it installs them via the distro package manager. `bootstrap.sh`
+supports `--force`, `--only <feature>`, and `--list` (it resolves its own
+path through symlinks); `00_launcher` symlinks it to
+`~/.local/bin/dots-bootstrap.sh`.
 
 ## Architecture
 
@@ -59,7 +56,7 @@ launcher is symlinked to `~/.local/bin/dots-bootstrap.sh` and supports
 dots/
 ├── bootstrap.sh              # Entry point: installs prereqs, runs features in lexical order
 ├── Makefile                  # Docker-based cross-distro testing
-├── Dockerfile(.debian/.arch) # Test images — each runs bootstrap.sh at build time
+├── Dockerfile                # Test image (BASE build-arg: fedora/debian/arch) — runs bootstrap.sh
 ├── features/
 │   ├── utils.sh              # Shared: check_command_version + version_gte + stow_pkg (DOTS_FORCE-aware)
 │   │                          # stow_pkg is a built-in symlink function (no GNU stow dependency)
@@ -74,8 +71,7 @@ dots/
 
 ### Control flow
 
-1. `bootstrap.sh` sources `features/utils.sh`, checks/installs distro prereqs,
-   prepends `$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin`
+1. `bootstrap.sh` checks/installs distro prereqs, prepends `$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin`
    to `PATH`, then loops over `features/*/install.sh` **in lexical order**
    (00, 01, 02, ...).
 2. Each `install.sh` sources `../utils.sh`, checks if already installed, and
@@ -115,12 +111,12 @@ dots/
 ## Gotchas & non-obvious patterns
 
 - **`check_command_version` has per-command version-parsing `case` branches** in
-  `features/utils.sh` (go, nvim, gum, crush, bao, rg, fd, lazygit, cargo). If you
-  add a new feature for a tool, you must add a matching branch here or the
-  idempotency check will misparse the version (or fall through to a generic
-  regex). Some binaries report versions in very different formats (e.g. lazygit
-  has no reliable `--version`, so `03_lazygit` deliberately gates on presence +
-  `DOTS_FORCE` rather than `check_command_version`).
+  `features/utils.sh` (go, nvim, gum, crush, bao, rg, fd). There is no catch-all
+  branch: if you add a new feature for a tool, you must add a matching branch or
+  the idempotency check will treat the tool as not installed and reinstall it
+  every run. Some binaries report versions in very different formats (e.g.
+  lazygit has no reliable `--version`, so `03_lazygit` deliberately gates on
+  presence + `DOTS_FORCE` rather than `check_command_version`).
 - **Checksum source differs per tool** and is not uniform:
   - Go: fetches SHA256 from the official `go.dev/dl/?mode=json` API (no
     downloadable checksum file).
@@ -159,8 +155,7 @@ dots/
    utils.sh, idempotency gate, `go install`/`cargo install` or verified download).
 3. Add a `check_command_version` branch in `features/utils.sh` for new tools.
 4. Add `dotfiles/` subdir if symlinking config.
-5. (Optional) Add a `make test-<feature>` target and/or extend the smoke-test
-   line in the `test-*` targets.
+5. (Optional) Extend the BATS suites in `features/99_doctor/tests/`.
 6. Verify with `make build && make test-fedora` (or `make test-all`).
 
 ## Submodule
