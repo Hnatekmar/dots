@@ -95,16 +95,16 @@ load helpers/utils
     echo "$output" | head -1 | grep -q 'v0\.\(1[6-9]\|[2-9][0-9]\)'
 }
 
-# ── crush ──
+# ── opencode ──
 
-@test "crush is installed" {
-    assert_cmd crush
+@test "opencode is installed" {
+    assert_cmd opencode
 }
 
-@test "crush version is 0.87.0+" {
-    run crush --version
+@test "opencode version is 2.0.26+" {
+    run opencode --version
     [ "$status" -eq 0 ]
-    echo "$output" | head -1 | grep -q 'v0\.\(8[7-9]\|9[0-9]\)'
+    echo "$output" | head -1 | grep -q 'v2\.'
 }
 
 # ── OpenBao ──

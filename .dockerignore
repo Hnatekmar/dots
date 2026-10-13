@@ -6,3 +6,4 @@ test-home
 *.swp
 *~
 .DS_Store
+**/secrets/

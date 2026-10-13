@@ -36,10 +36,15 @@ load helpers/utils
     [ "$status" -ne 0 ]
 }
 
-# ── Crush config ──
+# ── OpenCode config ──
 
-@test "~/.config/crush/crush.json exists (symlinked or real)" {
-    [ -e "$HOME/.config/crush/crush.json" ]
+@test "~/.config/opencode/opencode.json exists (symlinked or real)" {
+    [ -e "$HOME/.config/opencode/opencode.json" ]
+}
+
+@test "~/.config/opencode/opencode.json has no hardcoded /home/martin paths" {
+    run grep '/home/martin' "$HOME/.config/opencode/opencode.json"
+    [ "$status" -ne 0 ]
 }
 
 # ── Launcher ──

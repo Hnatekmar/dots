@@ -94,9 +94,6 @@ check_command_version() {
         gum)
             actual=$(gum --version 2>/dev/null | head -1 | sed -n 's/.*v\([0-9][0-9.]*\).*/\1/p')
             ;;
-        crush)
-            actual=$(crush --version 2>/dev/null | sed -n 's/^crush version v\([0-9][0-9.]*\).*/\1/p')
-            ;;
         bao)
             actual=$(bao version 2>/dev/null | head -1 | sed -n 's/OpenBao v\([0-9][0-9.]*\).*/\1/p')
             ;;
@@ -105,6 +102,9 @@ check_command_version() {
             ;;
         fd)
             actual=$(fd --version 2>/dev/null | head -1 | sed -n 's/fd \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        opencode)
+            actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
             ;;
     esac
 

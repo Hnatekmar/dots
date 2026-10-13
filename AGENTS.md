@@ -100,7 +100,7 @@ dots/
 - Feature dirs are prefixed with an ordering number (e.g. `00_go`). `bootstrap.sh`
   runs them in lexical order, so prefix matters for dependency ordering.
 - For `dotfiles/` subdirs, use `stow_pkg "$(dirname "$0")/dotfiles" <pkg>` (see
-  `00_base` and `02_crush`). This backs up any existing real file the package would
+  `00_base` and `02_opencode`). This backs up any existing real file the package would
   replace before symlinking it into `$HOME`. The built-in `stow_pkg` function in
   `features/utils.sh` replaces GNU stow — no external `stow` binary is needed.
 - Features that depend on another tool explicitly invoke its installer by bash
@@ -111,7 +111,7 @@ dots/
 ## Gotchas & non-obvious patterns
 
 - **`check_command_version` has per-command version-parsing `case` branches** in
-  `features/utils.sh` (go, nvim, gum, crush, bao, rg, fd). There is no catch-all
+  `features/utils.sh` (go, nvim, gum, opencode, bao, rg, fd). There is no catch-all
   branch: if you add a new feature for a tool, you must add a matching branch or
   the idempotency check will treat the tool as not installed and reinstall it
   every run. Some binaries report versions in very different formats (e.g.
@@ -140,6 +140,10 @@ dots/
   `zsh` is added to the prereq install in `bootstrap.sh`.
 - **`lazygit` version detection is unreliable** (built via `go install`, no
   ldflags), so it skips version gating entirely.
+- **OpenCode config quirks**: opencode v2 reads `opencode.json`, not
+  `config.json` (which is silently ignored). In the config, a missing
+  `{env:VAR}` becomes an empty string and opencode still starts, but a missing
+  `{file:...}` target stops the whole server with `ConfigInvalidError`.
 - Architecture mapping is repeated per installer: `x86_64`→`amd64`/`x86_64`
   (differs by tool!), `aarch64`→`arm64`. Go uses `amd64`, Neovim uses `x86_64`
   for the same arch — don't assume a single mapping.

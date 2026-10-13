@@ -1,0 +1,185 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "lead",
+  "small_model": "lmproxy/instruct",
+  "model": "lmproxy/power-coding",
+  "enabled_providers": ["lmproxy"],
+  "instructions": ["~/.config/opencode/instructions.md"],
+  "autoupdate": true,
+  "share": "disabled",
+  "snapshot": true,
+  "provider": {
+    "lmproxy": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "lmproxy",
+      "options": {
+        "baseURL": "https://proxy.personal-hermes.hnatekmar.dev/v1"
+      },
+      "models": {
+        "power-thinking": {
+          "reasoning": true,
+          "name": "power-thinking",
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "power-coding": {
+          "reasoning": true,
+          "name": "power-coding",
+          "options": {
+            "reasoningEffort": "max"
+          },
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "power-instruct": {
+          "name": "power-instruct",
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "thinking": {
+          "reasoning": true,
+          "name": "thinking",
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "attachment": true
+        },
+        "coding": {
+          "reasoning": true,
+          "name": "coding",
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "attachment": true
+        },
+        "instruct": {
+          "name": "instruct",
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "attachment": true
+        },
+        "vision": {
+          "name": "vision",
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "attachment": true
+        }
+      }
+    }
+  },
+  "mcp": {},
+  "permission": {
+    "*": "allow"
+  },
+  "agent": {
+    "build": {
+      "description": "Direct coding agent. Works solo (no orchestration, no delegation). DeepSeek V4.1 Flash, 1M context.",
+      "mode": "primary",
+      "model": "lmproxy/power-coding"
+    }
+  }
+}

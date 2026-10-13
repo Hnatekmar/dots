@@ -8,3 +8,6 @@
 # Test artifacts
 test-home/
 .bash_history
+
+# Local secrets (never commit)
+features/*/secrets/
