@@ -18,7 +18,8 @@ if [ "${DOTS_BUILD_FROM_SOURCE:-0}" = "1" ]; then
 fi
 
 # Prebuilt static binary. yq's `checksums` asset packs many algorithms into one
-# line per file, so use the GitHub release metadata digest instead.
+# line per file and is not reliably parseable, so the digest is pinned in
+# features/checksums.txt.
 ARCH="$(map_arch amd64 arm64)"
 CACHE_KEY="yq/${YQ_VERSION}"
 BASE="https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}"
@@ -28,21 +29,7 @@ TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
 echo "==> Installing yq $YQ_VERSION..."
-fetch_cached "https://api.github.com/repos/mikefarah/yq/releases/tags/v${YQ_VERSION}" \
-    "$CACHE_KEY/release.json" "$TMP_FOLDER/release.json"
-
-EXPECTED=$(python3 -c '
-import json, sys
-with open(sys.argv[1]) as fh:
-    data = json.load(fh)
-for asset in data.get("assets", []):
-    if asset["name"] == sys.argv[2]:
-        digest = asset.get("digest") or ""
-        if digest.startswith("sha256:"):
-            print(digest[7:])
-        break
-' "$TMP_FOLDER/release.json" "$ASSET")
-[ -n "$EXPECTED" ] || { echo "ERROR: no sha256 digest for $ASSET in yq release metadata" >&2; exit 1; }
+EXPECTED="$(require_asset_sha256 "$ASSET")"
 
 fetch_cached "$BASE/$ASSET" "$CACHE_KEY/$ASSET" "$TMP_FOLDER/$ASSET" "$EXPECTED"
 install_bin "$TMP_FOLDER/$ASSET" yq

@@ -162,6 +162,38 @@ install_bin() {
     rm -f "$HOME/go/bin/$name" "$HOME/.cargo/bin/$name"
 }
 
+# ── Pinned digests ────────────────────────────────────────────────────────
+# features/checksums.txt holds digests for release assets whose upstream
+# publishes no usable checksum file. Lookup is by filename, since the asset name
+# carries tool, version and architecture. Nothing is fetched at install time:
+# the GitHub API allows 60 anonymous requests/hour/IP — a fleet of dev
+# containers exhausts that — and a committed digest is a stronger guarantee
+# than one fetched at install time.
+checksums_file() {
+    printf '%s/checksums.txt\n' "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+}
+
+# Print the pinned digest for an asset, or return 1 when it is not listed.
+asset_sha256() {
+    local asset="$1"
+    local file
+    file="$(checksums_file)"
+    [ -f "$file" ] || return 1
+    awk -v a="$asset" '$2 == a {print $1; found=1} END {exit !found}' "$file"
+}
+
+# Print the pinned digest for an asset, or exit naming the command that adds it.
+require_asset_sha256() {
+    local asset="$1"
+    local digest
+    if ! digest="$(asset_sha256 "$asset")" || [ -z "$digest" ]; then
+        echo "ERROR: no pinned sha256 for $asset in features/checksums.txt" >&2
+        echo "       add it with: scripts/add-checksum.sh <release-asset-url>" >&2
+        exit 1
+    fi
+    printf '%s\n' "$digest"
+}
+
 # Map `uname -m` to tool-specific target names: map_arch <x86_64-name> <aarch64-name>
 map_arch() {
     case "$(uname -m)" in

@@ -108,11 +108,17 @@ Every artifact is checksum-verified before it is unpacked or installed:
 |--------|----------|
 | Go | SHA256 from the official `go.dev/dl` JSON index |
 | Node.js | SHA256 from the official `nodejs.org` `SHASUMS256.txt` |
-| Neovim, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, bat, fastfetch, yq | SHA256 from GitHub release metadata (`assets[].digest`) |
-| gum, lazygit, OpenBao, ripgrep, jq, k9s, gh, kubectx, kubecolor, opentofu | checksum files published in the release |
-| helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
+| Neovim, fd, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq | SHA256 pinned in `features/checksums.txt`, per architecture |
+| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu | checksum files published in the release |
+| uv, helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
+
+No feature calls the GitHub API: anonymous requests are capped at 60/hour per
+IP, which shared CI and container hosts exhaust. Where upstream publishes no
+usable checksum file, the digest is pinned in `features/checksums.txt` keyed by
+asset name — refresh it with `scripts/add-checksum.sh <asset-url>` when bumping
+a version.
 
 Verification also runs on cache hits, so a corrupted or tampered shared cache is
 detected rather than installed. `DOTS_BUILD_FROM_SOURCE=1` falls back to

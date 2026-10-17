@@ -11,8 +11,8 @@ if check_command_version lsd "$LSD_VERSION"; then
 fi
 
 # Prebuilt musl binary: statically linked, so one asset works on Fedora, Debian
-# and Arch. lsd publishes no checksum files, so the digest comes from the
-# GitHub release metadata (same approach as fd and Neovim).
+# and Arch. lsd publishes no checksum files, so the digest is pinned in
+# features/checksums.txt.
 # DOTS_BUILD_FROM_SOURCE=1 forces the old `cargo install` path.
 if [ "${DOTS_BUILD_FROM_SOURCE:-0}" = "1" ]; then
     echo "==> Building lsd $LSD_VERSION from source..."
@@ -28,21 +28,7 @@ TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
 echo "==> Installing lsd $LSD_VERSION..."
-fetch_cached "https://api.github.com/repos/lsd-rs/lsd/releases/tags/v${LSD_VERSION}" \
-    "$CACHE_KEY/release.json" "$TMP_FOLDER/release.json"
-
-EXPECTED=$(python3 -c '
-import json, sys
-with open(sys.argv[1]) as fh:
-    data = json.load(fh)
-for asset in data.get("assets", []):
-    if asset["name"] == sys.argv[2]:
-        digest = asset.get("digest") or ""
-        if digest.startswith("sha256:"):
-            print(digest[7:])
-        break
-' "$TMP_FOLDER/release.json" "$ASSET")
-[ -n "$EXPECTED" ] || { echo "ERROR: no sha256 digest for $ASSET in lsd release metadata" >&2; exit 1; }
+EXPECTED="$(require_asset_sha256 "$ASSET")"
 
 fetch_cached "https://github.com/lsd-rs/lsd/releases/download/v${LSD_VERSION}/$ASSET" \
     "$CACHE_KEY/$ASSET" "$TMP_FOLDER/$ASSET" "$EXPECTED"

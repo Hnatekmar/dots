@@ -139,12 +139,18 @@ dots/
   - Go: fetches SHA256 from the official `go.dev/dl/?mode=json` API (no
     downloadable checksum file).
   - Node.js: fetches SHA256 from the official `nodejs.org` `SHASUMS256.txt`.
-  - Neovim, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, bat, fastfetch, yq:
-    fetch SHA256 from the GitHub releases API `assets[].digest`.
-  - gum, lazygit, OpenBao, jq, k9s, gh, kubectx, kubecolor, opentofu: download a real
-    `checksums`/`sha256sum` file, match the hash for the exact asset, and
-    compare it to `sha256sum` output.
-  - ripgrep, helm, kubectl: a `.sha256`/`.sha256sum` sidecar next to each
+  - Neovim, fd, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq: upstream
+    publishes no usable checksum file, so the digest is pinned in
+    `features/checksums.txt` keyed by asset name; refresh it with
+    `scripts/add-checksum.sh <asset-url>` when bumping a version.
+    **Never call `api.github.com` from an installer**: anonymous requests are
+    capped at 60/hour per IP and a fleet of dev containers exhausts that. Release
+    *download* URLs and published checksum files are fine; only the API counts
+    against the limit.
+  - gum, lazygit, OpenBao, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu:
+    download a real `checksums`/`sha256sum` file, match the hash for the exact
+    asset, and compare it to `sha256sum` output.
+  - ripgrep, uv, helm, kubectl: a `.sha256`/`.sha256sum` sidecar next to each
     binary/tarball.
   - OpenCode: the npm registry's `dist.integrity` (SHA512, base64), converted to
     hex and passed to `fetch_cached` as `sha512:<hex>`.
