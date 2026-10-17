@@ -24,8 +24,8 @@ if [ "${DOTS_BUILD_FROM_SOURCE:-0}" = "1" ]; then
     exit 0
 fi
 
-# herdr ships a bare executable per platform (no tarball, no checksums file),
-# so the digest comes from the GitHub release metadata.
+# herdr ships a bare executable per platform (no tarball, no checksums file), so
+# the digest is pinned in features/checksums.txt.
 PLATFORM="$(map_arch x86_64 aarch64)"
 CACHE_KEY="herdr/${HERDR_VERSION}"
 ASSET="herdr-linux-${PLATFORM}"
@@ -34,21 +34,7 @@ TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
 echo "==> Installing herdr $HERDR_VERSION..."
-fetch_cached "https://api.github.com/repos/herdrdev/herdr/releases/tags/v${HERDR_VERSION}" \
-    "$CACHE_KEY/release.json" "$TMP_FOLDER/release.json"
-
-EXPECTED=$(python3 -c '
-import json, sys
-with open(sys.argv[1]) as fh:
-    data = json.load(fh)
-for asset in data.get("assets", []):
-    if asset["name"] == sys.argv[2]:
-        digest = asset.get("digest") or ""
-        if digest.startswith("sha256:"):
-            print(digest[7:])
-        break
-' "$TMP_FOLDER/release.json" "$ASSET")
-[ -n "$EXPECTED" ] || { echo "ERROR: no sha256 digest for $ASSET in herdr release metadata" >&2; exit 1; }
+EXPECTED="$(require_asset_sha256 "$ASSET")"
 
 fetch_cached "https://github.com/herdrdev/herdr/releases/download/v${HERDR_VERSION}/$ASSET" \
     "$CACHE_KEY/$ASSET" "$TMP_FOLDER/$ASSET" "$EXPECTED"
