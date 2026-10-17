@@ -369,7 +369,7 @@ load helpers/utils
     assert_cmd opencode
 }
 
-@test "opencode version is 2.0.26+" {
+@test "opencode version is 2.x" {
     run opencode --version
     [ "$status" -eq 0 ]
     echo "$output" | head -1 | grep -q 'v2\.'
@@ -396,4 +396,50 @@ load helpers/utils
 
 @test "gopls is installed" {
     assert_cmd gopls
+}
+
+# ── kubelogin ──
+
+@test "kubelogin is installed" {
+    assert_cmd kubelogin
+}
+
+@test "kubelogin version is 0.2.21+" {
+    run kubelogin --version
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'git hash: v0\.2\.\(2[1-9]\|[3-9][0-9]\)'
+}
+
+@test "kubelogin is installed in ~/.local/bin (rootless)" {
+    [ -x "$HOME/.local/bin/kubelogin" ]
+}
+
+# ── devops-cluster kubeconfigs ──
+
+@test "dots-kubeconfig is installed" {
+    assert_cmd dots-kubeconfig
+}
+
+@test "dev and prod kubeconfigs are installed" {
+    [ -s "$HOME/.kube/devops-cluster/dev.yaml" ]
+    [ -s "$HOME/.kube/devops-cluster/prod.yaml" ]
+}
+
+@test "dev-k8s and prod-k8s contexts are merged" {
+    run kubectl config get-contexts -o name
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -qx 'dev-k8s'
+    echo "$output" | grep -qx 'prod-k8s'
+}
+
+# ── dev-env ──
+
+@test "dev-env is installed" {
+    assert_cmd dev-env
+}
+
+@test "dev-env renders its help" {
+    run dev-env --help
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q -- '--address'
 }

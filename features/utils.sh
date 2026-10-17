@@ -298,6 +298,11 @@ check_command_version() {
         opencode)
             actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
             ;;
+        kubelogin)
+            # `kubelogin --version` prints "kubelogin version " followed by an
+            # empty value; the real version sits in the git hash line.
+            actual=$(kubelogin --version 2>/dev/null | sed -n 's|^git hash: v\([0-9][0-9.]*\)/.*|\1|p' | head -1)
+            ;;
         lazygit)
             # Release binaries print "..., version=0.63.1, os=linux, ...";
             # source builds have no ldflags and print version=unversioned.

@@ -60,18 +60,18 @@ export DOTS_FORCE
 echo "==> Checking prerequisites..."
 if [ "$(id -u)" = "0" ]; then
     if command -v dnf >/dev/null 2>&1; then
-        dnf install -y git curl tar findutils python3 gcc make zsh
+        dnf install -y git curl tar findutils python3 gcc make zsh socat
     elif command -v apt-get >/dev/null 2>&1; then
-        apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make zsh
+        apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make zsh socat
     elif command -v pacman >/dev/null 2>&1; then
-        pacman -S --noconfirm --needed git curl tar findutils python gcc make zsh
+        pacman -S --noconfirm --needed git curl tar findutils python gcc make zsh socat
     else
         echo "ERROR: no supported package manager (dnf/apt-get/pacman)" >&2
         exit 1
     fi
 else
     MISSING=""
-    for cmd in git curl tar find python3 gcc make zsh; do
+    for cmd in git curl tar find python3 gcc make zsh socat; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
             MISSING="$MISSING $cmd"
         fi
