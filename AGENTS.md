@@ -3,8 +3,9 @@
 GNU Stow-based dotfiles and tool bootstrap for Linux. Installs and configures
 development tools via a **feature system**: every directory under `features/` is
 a self-contained installer. Not a typical dotfiles repo — this is an idempotent,
-cross-distro provisioning system where each feature *builds* a tool from source
-or downloads a pinned binary with checksum verification.
+cross-distro provisioning system where each feature installs a pinned upstream
+release binary with checksum verification (building from source only when no
+binary is published or `DOTS_BUILD_FROM_SOURCE=1` is set).
 
 ## Commands
 
@@ -84,9 +85,10 @@ dots/
 
 - **The only distro-specific code lives in `bootstrap.sh`** (prereq check/install).
   All features must be fully distro-agnostic and install into `$HOME` (typically
-  `~/.local/`, `~/go/bin/`, `~/.cargo/bin/`): build via `go install` /
-  `cargo install`, or download pinned upstream binaries. No feature should write
-  to system paths like `/usr/local`.
+  `~/.local/`, `~/go/bin/`, `~/.cargo/bin/`): install the pinned upstream release
+  binary, and only fall back to `go install` / `cargo install` behind
+  `DOTS_BUILD_FROM_SOURCE=1`. No feature should write to system paths like
+  `/usr/local`.
 - Every `install.sh` must start with:
   ```bash
   #!/bin/bash
@@ -97,6 +99,20 @@ dots/
 - **Idempotency is mandatory.** Gate on `check_command_version <cmd> "<ver>"`
   and `exit 0` with a "already installed, skipping" message. This function
   returns 1 when `DOTS_FORCE=1`, forcing a reinstall.
+- **Every download goes through `fetch_cached <url> <cache-key> <dest> [digest]`**,
+  never a bare `curl -o`. It reuses `DOTS_CACHE_DIR` (default
+  `${XDG_CACHE_HOME:-$HOME/.cache}/dots`), verifies the digest on cache hits too,
+  and publishes entries atomically so parallel bootstraps can share a cache.
+  Cache keys are `<tool>/<version>/<filename>`. A digest can be bare SHA256 hex
+  or `sha512:<hex>` (used for npm's integrity hash).
+- **Prebuilt binaries are the default.** `install_bin <path> <name>` copies into
+  `~/.local/bin` and removes stale copies from `~/go/bin` and `~/.cargo/bin`:
+  both precede `~/.local/bin` on PATH, so a leftover source build would shadow
+  the new binary and defeat version gating.
+- **Version-gate lazygit-style tools only on the binary path.** Release binaries
+  report a real version; `go install` builds have no ldflags and print
+  `version=unversioned`, so the `DOTS_BUILD_FROM_SOURCE=1` path keeps a
+  presence-only check.
 - Feature dirs are prefixed with an ordering number (e.g. `00_go`). `bootstrap.sh`
   runs them in lexical order, so prefix matters for dependency ordering.
 - For `dotfiles/` subdirs, use `stow_pkg "$(dirname "$0")/dotfiles" <pkg>` (see
@@ -120,9 +136,12 @@ dots/
 - **Checksum source differs per tool** and is not uniform:
   - Go: fetches SHA256 from the official `go.dev/dl/?mode=json` API (no
     downloadable checksum file).
-  - Neovim: fetches SHA256 from the GitHub releases API `assets[].digest`.
-  - OpenBao: downloads a real `checksums.txt`, greps the hash for its exact
-    tarball, and compares it to `sha256sum` output.
+  - Neovim, fd: fetch SHA256 from the GitHub releases API `assets[].digest`.
+  - gum, lazygit, OpenBao: download a real `checksums.txt`, match the hash for
+    their exact tarball, and compare it to `sha256sum` output.
+  - ripgrep: a `.sha256` sidecar next to each tarball.
+  - OpenCode: the npm registry's `dist.integrity` (SHA512, base64), converted to
+    hex and passed to `fetch_cached` as `sha512:<hex>`.
   - Go/Neovim remove the old install **only after** checksum verification passes
     (`rm -rf "$HOME/.local/go"` / `rm -rf "$HOME/.local/bin/nvim ..."` after
     the check). All tools install under `$HOME/.local/` — no root needed.
@@ -138,8 +157,10 @@ dots/
   and `zsh-syntax-highlighting` referenced in `~/.zshrc` are cloned into
   `$OH_MY_ZSH/custom/plugins` because they aren't bundled with oh-my-zsh.
   `zsh` is added to the prereq install in `bootstrap.sh`.
-- **`lazygit` version detection is unreliable** (built via `go install`, no
-  ldflags), so it skips version gating entirely.
+- **`lazygit --version` prints `key=value` fields** (`commit=..., build
+  source=binaryRelease, version=0.63.1, os=linux, ...`) and ends with a trailing
+  `git version=2.5x`. Parse with `grep -o 'version=[0-9][0-9.]*' | head -1`;
+  a `sed 's/.*version=//'` catches the git version instead.
 - **OpenCode config quirks**: opencode v2 reads `opencode.json`, not
   `config.json` (which is silently ignored). In the config, a missing
   `{env:VAR}` becomes an empty string and opencode still starts, but a missing

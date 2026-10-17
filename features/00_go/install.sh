@@ -16,33 +16,34 @@ fi
 TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
-cd "$TMP_FOLDER"
-
 TARBALL="go${GO_VERSION}.linux-${ARCH}.tar.gz"
+CACHE_KEY="go/${GO_VERSION}"
 
-echo "==> Downloading Go $GO_VERSION..."
-curl -LO "https://go.dev/dl/${TARBALL}"
+echo "==> Installing Go $GO_VERSION..."
+# Go publishes SHA256 via their JSON API, not as a downloadable file.
+fetch_cached "https://go.dev/dl/?mode=json&include=all" \
+    "$CACHE_KEY/index.json" "$TMP_FOLDER/index.json"
 
-# Go publishes SHA256 via their JSON API, not as a downloadable file
-echo "==> Verifying checksum..."
-EXPECTED=$(curl -sL "https://go.dev/dl/?mode=json&include=all" \
-    | python3 -c "
+EXPECTED=$(python3 -c '
 import json, sys
-for r in json.load(sys.stdin):
-    if r['version'] == 'go${GO_VERSION}':
-        for f in r['files']:
-            if f['os'] == 'linux' and f['arch'] == '${ARCH}':
-                print(f['sha256'])
-                break
+with open(sys.argv[1]) as fh:
+    releases = json.load(fh)
+want = "go" + sys.argv[2]
+for release in releases:
+    if release["version"] == want:
+        for entry in release["files"]:
+            if entry["os"] == "linux" and entry["arch"] == sys.argv[3]:
+                print(entry["sha256"])
         break
-")
+' "$TMP_FOLDER/index.json" "$GO_VERSION" "$ARCH")
+[ -n "$EXPECTED" ] || { echo "ERROR: no sha256 for $TARBALL in go.dev release index" >&2; exit 1; }
 
-verify_sha256 "$TARBALL" "$EXPECTED"
+fetch_cached "https://go.dev/dl/${TARBALL}" "$CACHE_KEY/${TARBALL}" "$TMP_FOLDER/${TARBALL}" "$EXPECTED"
 
 # Download and verify succeeded — safe to remove old install
 rm -rf "$HOME/.local/go"
 
 mkdir -p "$HOME/.local"
-tar -xzf "$TARBALL" -C "$HOME/.local"
+tar -xzf "$TMP_FOLDER/$TARBALL" -C "$HOME/.local"
 
 echo "==> Go $GO_VERSION installed."

@@ -50,18 +50,116 @@ stow_pkg() {
     done < <(cd "$dotfiles_dir" && find "$pkg" \( -type f -o -type l \) -print)
 }
 
+# Print the digest of a file. A "sha512:" prefix selects SHA512; a bare hex
+# string (or "sha256:" prefix) selects SHA256.
+digest_of() {
+    case "$2" in
+        sha512:*) sha512sum "$1" | cut -d' ' -f1 ;;
+        *)        sha256sum "$1" | cut -d' ' -f1 ;;
+    esac
+}
+
+# Compare a file against an expected digest: "<sha256-hex>" or "sha512:<hex>".
+digest_is() {
+    local expected="$2"
+    case "$expected" in
+        sha512:*) expected="${expected#sha512:}" ;;
+        sha256:*) expected="${expected#sha256:}" ;;
+    esac
+    [ -n "$expected" ] && [ "$(digest_of "$1" "$2")" = "$expected" ]
+}
+
 # Verify a downloaded file against an expected SHA256 hex digest. Exits on mismatch.
 verify_sha256() {
     local file="$1"
     local expected="$2"
-    local actual
-    actual="$(sha256sum "$file" | cut -d' ' -f1)"
-    if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+    if [ -z "$expected" ] || ! digest_is "$file" "$expected"; then
         echo "ERROR: checksum mismatch for $file" >&2
         echo "  Expected: ${expected:-<none>}" >&2
-        echo "  Actual:   $actual" >&2
+        echo "  Actual:   $(digest_of "$file" "$expected" 2>/dev/null)" >&2
         exit 1
     fi
+}
+
+# ── Download cache ────────────────────────────────────────────────────────
+# Every downloaded artifact goes through fetch_cached, which keeps a copy in
+# DOTS_CACHE_DIR. Entries are laid out as <tool>/<version>/<filename> so a
+# shared cache stays browsable and pinned versions never collide.
+#
+#   DOTS_CACHE_DIR=/mnt/nas/cache/dots   # shared cache (e.g. dev-envs NAS)
+#   DOTS_CACHE_DIR=""                    # disable caching
+#
+# Unset falls back to ${XDG_CACHE_HOME:-$HOME/.cache}/dots.
+dots_cache_dir() {
+    if [ -n "${DOTS_CACHE_DIR+x}" ]; then
+        printf '%s\n' "$DOTS_CACHE_DIR"
+    else
+        printf '%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}/dots"
+    fi
+}
+
+# fetch_cached <url> <cache-key> <dest> [digest]
+#
+# Download <url> to <dest>, reusing the cached copy when one exists. Passing a
+# digest (bare SHA256 hex or "sha512:<hex>") verifies the artifact — on cache
+# hits too, so a corrupted shared cache fails loudly instead of installing a
+# broken binary. Cache writes land under a temporary name and are renamed into
+# place, so parallel bootstraps sharing one cache never observe a partial file.
+fetch_cached() {
+    local url="$1" key="$2" dest="$3" expected="${4:-}"
+    local root
+    root="$(dots_cache_dir)"
+
+    if [ -n "$root" ] && [ -s "$root/$key" ]; then
+        if cp -f "$root/$key" "$dest" 2>/dev/null &&
+            { [ -z "$expected" ] || digest_is "$dest" "$expected"; }; then
+            echo "==> cache hit: $key"
+            return 0
+        fi
+        echo "WARN: cache entry unusable ($key), downloading again" >&2
+        rm -f "$dest"
+    fi
+
+    echo "==> Downloading $url"
+
+    # Cache-write path: download beside the final entry, verify, then rename.
+    # Falls through to a plain download when the cache is not writable (e.g. a
+    # read-only NAS mount), so a shared cache never becomes a hard dependency.
+    if [ -n "$root" ] && mkdir -p "$root/$(dirname "$key")" 2>/dev/null &&
+        [ -w "$root/$(dirname "$key")" ]; then
+        local tmp
+        tmp="$(mktemp "$root/$key.XXXXXX")"
+        if curl -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url"; then
+            if [ -n "$expected" ] && ! digest_is "$tmp" "$expected"; then
+                echo "ERROR: checksum mismatch for $url" >&2
+                echo "  Expected: $expected" >&2
+                echo "  Actual:   $(digest_of "$tmp" "$expected")" >&2
+                rm -f "$tmp"
+                exit 1
+            fi
+            chmod 0644 "$tmp" 2>/dev/null || true
+            mv -f "$tmp" "$root/$key"
+            cp -f "$root/$key" "$dest"
+            return 0
+        fi
+        rm -f "$tmp"
+        return 1
+    fi
+
+    curl -fsSL --retry 3 --retry-delay 2 -o "$dest" "$url"
+    [ -z "$expected" ] || verify_sha256 "$dest" "$expected"
+}
+
+# Install a prebuilt binary into ~/.local/bin. Copies left behind by older
+# source builds in ~/go/bin or ~/.cargo/bin are removed: both directories
+# precede ~/.local/bin on PATH, so a stale copy would shadow the new binary.
+install_bin() {
+    local src="$1"
+    local name="$2"
+    mkdir -p "$HOME/.local/bin"
+    cp -f "$src" "$HOME/.local/bin/$name"
+    chmod 0755 "$HOME/.local/bin/$name"
+    rm -f "$HOME/go/bin/$name" "$HOME/.cargo/bin/$name"
 }
 
 # Map `uname -m` to tool-specific target names: map_arch <x86_64-name> <aarch64-name>
@@ -105,6 +203,11 @@ check_command_version() {
             ;;
         opencode)
             actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        lazygit)
+            # Release binaries print "..., version=0.63.1, os=linux, ...";
+            # source builds have no ldflags and print version=unversioned.
+            actual=$(lazygit --version 2>/dev/null | grep -o 'version=[0-9][0-9.]*' | head -1 | cut -d= -f2)
             ;;
     esac
 

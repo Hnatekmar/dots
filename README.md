@@ -2,7 +2,7 @@
 
 Linux dotfiles and tool bootstrap system. Each directory in `features/` is a self-contained installer. Uses built-in symlinks. No GNU stow required.
 
-Works on Fedora, Debian/Ubuntu, and Arch. Only `bootstrap.sh` has distro-specific code. All tools build from source or download as verified binaries.
+Works on Fedora, Debian/Ubuntu, and Arch. Only `bootstrap.sh` has distro-specific code. Tools install from pinned upstream release binaries with checksum verification; `DOTS_BUILD_FROM_SOURCE=1` rebuilds the Go/Rust tools from source instead.
 
 ## Quick start
 
@@ -18,7 +18,7 @@ bash bootstrap.sh
 - Root access only for system packages (git, curl, zsh)
 - All tools install to `$HOME` (~/.local/, ~/.cargo/, ~/go/bin/)
 
-`bootstrap.sh` installs system packages when run as root. Then it builds everything else from source.
+`bootstrap.sh` installs system packages when run as root. Everything else installs into `$HOME` from a verified release binary, so a source toolchain is only exercised under `DOTS_BUILD_FROM_SOURCE=1`.
 
 ## Updating
 
@@ -31,6 +31,33 @@ dots-bootstrap.sh --only 00_go  # Run one feature
 dots-bootstrap.sh --list        # Show available features
 ```
 
+## Download cache
+
+Every download goes through one cache, so re-provisioning a machine (or a fleet
+of throwaway containers) does not re-fetch toolchains and tarballs.
+
+```bash
+export DOTS_CACHE_DIR=/mnt/nas/cache/dots   # e.g. a NAS mount
+bash bootstrap.sh
+```
+
+| Setting | Meaning |
+|---------|---------|
+| unset | Cache under `${XDG_CACHE_HOME:-$HOME/.cache}/dots` |
+| `DOTS_CACHE_DIR=/path` | Use that directory, e.g. a shared NAS mount |
+| `DOTS_CACHE_DIR=` (empty) | Disable caching for this run |
+| `DOTS_BUILD_FROM_SOURCE=1` | Build gum, ripgrep, fd and lazygit from source |
+
+Entries are stored as `<tool>/<version>/<filename>`, so the cache stays
+browsable and can be shared by machines of both architectures (the arch is part
+of every filename). Files are downloaded to a temporary name and renamed into
+place, so concurrent bootstraps can share one cache safely. Checksums are
+verified on every cache hit and a mismatch triggers a fresh download. A
+read-only cache directory degrades gracefully: downloads still work, they just
+are not stored.
+
+Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
+
 ## Features
 
 | Dir | Feature | Installs |
@@ -40,11 +67,11 @@ dots-bootstrap.sh --list        # Show available features
 | `00_rust` | Rust | rustup + stable toolchain to `~/.cargo` |
 | `00_neovim` | Neovim | Neovim 0.12.4 to `~/.local` |
 | `00_launcher` | Launcher | `~/.local/bin/dots-bootstrap.sh` |
-| `01_gum` | Gum | charmbracelet/gum v0.16.2 via `go install` |
+| `01_gum` | Gum | gum v0.16.2 release binary → `~/.local/bin` |
 | `02_opencode` | OpenCode | OpenCode v2.0.26 + config (providers, MCP, permissions) |
-| `02_ripgrep` | ripgrep | v15.2.0 via `cargo install` |
-| `02_fd` | fd | v10.4.2 via `cargo install` |
-| `03_lazygit` | lazygit | v0.63.1 via `go install` |
+| `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
+| `02_fd` | fd | fd v10.4.2 (musl) release binary |
+| `03_lazygit` | lazygit | lazygit v0.63.1 release binary |
 | `03_lazyvim` | LazyVim | submodule + nvim symlink |
 | `04_openbao` | OpenBao | OpenBao 2.6.1 binary |
 | `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
@@ -55,7 +82,19 @@ Features run in lexical order. Each feature is idempotent. Use `--force` to rein
 
 ### Download verification
 
-Go, Neovim, OpenBao, and rustup downloads verify SHA256 checksums. Other tools build from source via `cargo` or `go` with pinned versions. OpenCode installs a pinned release through its official installer.
+Every artifact is checksum-verified before it is unpacked or installed:
+
+| Source | Checksum |
+|--------|----------|
+| Go | SHA256 from the official `go.dev/dl` JSON index |
+| Neovim, fd | SHA256 from GitHub release metadata (`assets[].digest`) |
+| gum, lazygit, OpenBao, ripgrep | checksum files published in the release |
+| rustup-init | `.sha256` sidecar |
+| OpenCode | the npm registry's SHA512 integrity hash |
+
+Verification also runs on cache hits, so a corrupted or tampered shared cache is
+detected rather than installed. `DOTS_BUILD_FROM_SOURCE=1` falls back to
+`cargo install` / `go install` at the same pinned versions.
 
 ## Testing
 
@@ -85,17 +124,17 @@ dots/
 ├── Makefile                  # Docker testing (fedora/debian/arch)
 ├── Dockerfile                # Test image (BASE build-arg: fedora default)
 ├── features/
-│   ├── utils.sh               # Shared: version checks + symlink function
+│   ├── utils.sh               # Shared: version checks, download cache, symlinks
 │   ├── 00_base/               # Shell config symlinks
 │   ├── 00_go/                 # Go install
 │   ├── 00_rust/               # rustup install
 │   ├── 00_neovim/             # Neovim install
 │   ├── 00_launcher/           # Launcher script
-│   ├── 01_gum/                # gum via go install
+│   ├── 01_gum/                # gum release binary
 │   ├── 02_opencode/           # opencode + config
-│   ├── 02_ripgrep/            # ripgrep via cargo install
-│   ├── 02_fd/                 # fd via cargo install
-│   ├── 03_lazygit/            # lazygit via go install
+│   ├── 02_ripgrep/            # ripgrep release binary
+│   ├── 02_fd/                 # fd release binary
+│   ├── 03_lazygit/            # lazygit release binary
 │   ├── 03_lazyvim/            # LazyVim submodule + nvim symlink
 │   ├── 04_openbao/            # OpenBao binary install
 │   └── 99_doctor/             # Test suites + doctor executable
