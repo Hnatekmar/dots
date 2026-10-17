@@ -42,13 +42,13 @@ dots-doctor                       # run BATS test suites to validate installatio
 ```
 
 All tools are installed into the user's home directory (`~/.local/`,
-`~/.local/go/`, `~/.cargo/`, `~/go/bin/`) — no root required for tool
-installation. The only system-level step is installing distro prerequisites
-(git, curl, zsh, etc.); when run as non-root, `bootstrap.sh` checks for
-these and errors with guidance if any are missing. When run as root (e.g. in
-Docker), it installs them via the distro package manager. `bootstrap.sh`
-supports `--force`, `--only <feature>`, and `--list` (it resolves its own
-path through symlinks); `00_launcher` symlinks it to
+`~/.local/go/`, `~/.local/node/`, `~/.cargo/`, `~/go/bin/`) — no root required
+for tool installation. The only system-level step is installing distro
+prerequisites (git, curl, zsh, etc.); when run as non-root, `bootstrap.sh`
+checks for these and errors with guidance if any are missing. When run as root
+(e.g. in Docker), it installs them via the distro package manager.
+`bootstrap.sh` supports `--force`, `--only <feature>`, and `--list` (it
+resolves its own path through symlinks); `00_launcher` symlinks it to
 `~/.local/bin/dots-bootstrap.sh`.
 
 ## Architecture
@@ -72,7 +72,9 @@ dots/
 
 ### Control flow
 
-1. `bootstrap.sh` checks/installs distro prereqs, prepends `$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin`
+1. `bootstrap.sh` checks/installs distro prereqs (including `zsh`, then makes it
+   the default login shell when run as root), prepends
+   `$HOME/.local/node/bin:$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin`
    to `PATH`, then loops over `features/*/install.sh` **in lexical order**
    (00, 01, 02, ...).
 2. Each `install.sh` sources `../utils.sh`, checks if already installed, and
@@ -136,14 +138,19 @@ dots/
 - **Checksum source differs per tool** and is not uniform:
   - Go: fetches SHA256 from the official `go.dev/dl/?mode=json` API (no
     downloadable checksum file).
-  - Neovim, fd: fetch SHA256 from the GitHub releases API `assets[].digest`.
-  - gum, lazygit, OpenBao: download a real `checksums.txt`, match the hash for
-    their exact tarball, and compare it to `sha256sum` output.
-  - ripgrep: a `.sha256` sidecar next to each tarball.
+  - Node.js: fetches SHA256 from the official `nodejs.org` `SHASUMS256.txt`.
+  - Neovim, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, bat, fastfetch, yq:
+    fetch SHA256 from the GitHub releases API `assets[].digest`.
+  - gum, lazygit, OpenBao, jq, k9s, gh, kubectx, kubecolor, opentofu: download a real
+    `checksums`/`sha256sum` file, match the hash for the exact asset, and
+    compare it to `sha256sum` output.
+  - ripgrep, helm, kubectl: a `.sha256`/`.sha256sum` sidecar next to each
+    binary/tarball.
   - OpenCode: the npm registry's `dist.integrity` (SHA512, base64), converted to
     hex and passed to `fetch_cached` as `sha512:<hex>`.
-  - Go/Neovim remove the old install **only after** checksum verification passes
-    (`rm -rf "$HOME/.local/go"` / `rm -rf "$HOME/.local/bin/nvim ..."` after
+  - Go/Neovim/Node.js remove the old install **only after** checksum
+    verification passes (`rm -rf "$HOME/.local/go"` /
+    `rm -rf "$HOME/.local/node"` / `rm -rf "$HOME/.local/bin/nvim ..."` after
     the check). All tools install under `$HOME/.local/` — no root needed.
 - **rustup must be run with `--no-modify-path`** in `00_rust`. Otherwise it
   appends to the *symlinked* `~/.profile` symlink, which would mutate the repo's

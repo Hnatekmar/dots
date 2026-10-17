@@ -201,6 +201,68 @@ check_command_version() {
         fd)
             actual=$(fd --version 2>/dev/null | head -1 | sed -n 's/fd \([0-9][0-9.]*\).*/\1/p')
             ;;
+        fzf)
+            actual=$(fzf --version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        lsd)
+            actual=$(lsd --version 2>/dev/null | head -1 | sed -n 's/^lsd \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        hunk)
+            actual=$(hunk --version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        zoxide)
+            actual=$(zoxide --version 2>/dev/null | head -1 | sed -n 's/^zoxide \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        herdr)
+            actual=$(herdr --version 2>/dev/null | head -1 | sed -n 's/^herdr \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        direnv)
+            actual=$(direnv version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        node)
+            actual=$(node --version 2>/dev/null | head -1 | sed -n 's/^v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        uv)
+            actual=$(uv --version 2>/dev/null | head -1 | sed -n 's/^uv \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        tofu)
+            actual=$(tofu version 2>/dev/null | head -1 | sed -n 's/^OpenTofu v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        gh)
+            actual=$(gh version 2>/dev/null | head -1 | sed -n 's/^gh version \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        kubectx)
+            actual=$(kubectx --version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        kubens)
+            actual=$(kubens --version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        kubecolor)
+            # --kubecolor-version reports kubecolor's own version without
+            # invoking kubectl (which may not be installed yet).
+            actual=$(kubecolor --kubecolor-version 2>/dev/null | head -1 | sed -n 's/^v\?\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        bat)
+            actual=$(bat --version 2>/dev/null | head -1 | sed -n 's/^bat \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        fastfetch)
+            actual=$(fastfetch --version 2>/dev/null | head -1 | sed -n 's/^fastfetch \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        helm)
+            actual=$(helm version --template '{{.Version}}' 2>/dev/null | sed -n 's/^v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        kubectl)
+            actual=$(kubectl version --client=true --output json 2>/dev/null | sed -n 's/.*"gitVersion": "v\([0-9][0-9.]*\)".*/\1/p' | head -1)
+            ;;
+        jq)
+            actual=$(jq --version 2>/dev/null | sed -n 's/^jq-\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        yq)
+            actual=$(yq --version 2>/dev/null | sed -n 's/.*version v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        k9s)
+            actual=$(k9s version --short 2>/dev/null | sed -n 's/^Version[[:space:]]*v\([0-9][0-9.]*\).*/\1/p' | head -1)
+            ;;
         opencode)
             actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
             ;;

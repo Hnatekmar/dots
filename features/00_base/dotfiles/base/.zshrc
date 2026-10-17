@@ -1,26 +1,8 @@
 
-
-
-function sesh-sessions() {
-  {
-    exec </dev/tty
-    exec <&1
-    local session
-    session=$(sesh list -t -c | fzf --height 40% --reverse --border-label ' sesh ' --border --prompt '⚡  ')
-    zle reset-prompt > /dev/null 2>&1 || true
-    [[ -z "$session" ]] && return
-    sesh connect $session
-  }
-}
-
-zle     -N             sesh-sessions
-bindkey -M emacs '\es' sesh-sessions
-bindkey -M vicmd '\es' sesh-sessions
-bindkey -M viins '\es' sesh-sessions
 set -o vi
 
 export ZSH="$HOME/.oh-my-zsh"
-export PATH="$HOME/.local/go/bin:$HOME/go/bin:$PATH"
+export PATH="$HOME/.local/node/bin:$HOME/.local/go/bin:$HOME/go/bin:$PATH"
 
 ZSH_THEME="3den"
 
@@ -51,12 +33,15 @@ alias la='ls -a'
 alias lla='ls -la'
 alias lt='ls --tree'
 
+# Colorize kubectl output via kubecolor
+alias kubectl='kubecolor'
+
 export EDITOR=nvim
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 eval "$(zoxide init zsh)"
-export PATH="$HOME/.local/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.local/node/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000

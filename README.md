@@ -16,9 +16,9 @@ bash bootstrap.sh
 
 - A supported distro (dnf, apt-get, or pacman)
 - Root access only for system packages (git, curl, zsh)
-- All tools install to `$HOME` (~/.local/, ~/.cargo/, ~/go/bin/)
+- All tools install to `$HOME` (~/.local/, ~/.local/node/, ~/.cargo/, ~/go/bin/)
 
-`bootstrap.sh` installs system packages when run as root. Everything else installs into `$HOME` from a verified release binary, so a source toolchain is only exercised under `DOTS_BUILD_FROM_SOURCE=1`.
+`bootstrap.sh` installs system packages when run as root. Everything else installs into `$HOME` from a verified release binary, so a source toolchain is only exercised under `DOTS_BUILD_FROM_SOURCE=1`. It also makes `zsh` the default login shell when run as root; log in again after the first bootstrap for the change to take effect.
 
 ## Updating
 
@@ -46,7 +46,7 @@ bash bootstrap.sh
 | unset | Cache under `${XDG_CACHE_HOME:-$HOME/.cache}/dots` |
 | `DOTS_CACHE_DIR=/path` | Use that directory, e.g. a shared NAS mount |
 | `DOTS_CACHE_DIR=` (empty) | Disable caching for this run |
-| `DOTS_BUILD_FROM_SOURCE=1` | Build gum, ripgrep, fd and lazygit from source |
+| `DOTS_BUILD_FROM_SOURCE=1` | Build Gum, ripgrep, fd, fzf, zoxide, lsd, yq, k9s, kubecolor and herdr from source |
 
 Entries are stored as `<tool>/<version>/<filename>`, so the cache stays
 browsable and can be shared by machines of both architectures (the arch is part
@@ -63,17 +63,37 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | Dir | Feature | Installs |
 |-----|---------|----------|
 | `00_base` | Shell config | `.bash_profile`, `.profile` via symlinks |
+| `00_git` | Git | global `user.name` / `user.email` |
 | `00_go` | Go | Go 1.26.5 to `~/.local/go` |
 | `00_rust` | Rust | rustup + stable toolchain to `~/.cargo` |
 | `00_neovim` | Neovim | Neovim 0.12.4 to `~/.local` |
 | `00_launcher` | Launcher | `~/.local/bin/dots-bootstrap.sh` |
+| `00_direnv` | direnv | direnv v2.38.2 release binary |
+| `00_node` | Node.js | Node.js 24.22.0 (LTS) to `~/.local/node` |
+| `00_uv` | uv | uv v0.13.1 + uvx |
 | `01_gum` | Gum | gum v0.16.2 release binary → `~/.local/bin` |
 | `02_opencode` | OpenCode | OpenCode v2.0.26 + config (providers, MCP, permissions) |
 | `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
 | `02_fd` | fd | fd v10.4.2 (musl) release binary |
+| `02_fzf` | fzf | fzf v0.74.5 release binary |
+| `02_hunk` | Hunk | hunk v0.23.0 release binary + git diff pager |
+| `02_lsd` | lsd | lsd v1.2.0 (musl) release binary |
+| `02_zoxide` | zoxide | zoxide v0.10.0 (musl) release binary |
+| `02_bat` | bat | bat v0.26.1 release binary |
+| `03_herdr` | herdr | herdr v0.9.5 release binary |
 | `03_lazygit` | lazygit | lazygit v0.63.1 release binary |
 | `03_lazyvim` | LazyVim | submodule + nvim symlink |
+| `03_fastfetch` | fastfetch | fastfetch v2.70.0 release binary + presets |
 | `04_openbao` | OpenBao | OpenBao 2.6.1 binary |
+| `05_gh` | GitHub CLI | gh v2.102.0 release binary |
+| `05_helm` | Helm | helm v4.3.1 release binary |
+| `05_jq` | jq | jq v1.8.2 release binary |
+| `05_k9s` | k9s | k9s v0.51.0 release binary |
+| `05_kubectl` | kubectl | kubectl v1.37.1 release binary |
+| `05_kubecolor` | kubecolor | kubecolor v0.8.0 release binary |
+| `05_kubectx` | kubectx | kubectx + kubens v0.11.0 release binaries |
+| `05_opentofu` | OpenTofu | OpenTofu v1.13.1 release binary |
+| `05_yq` | yq | yq v4.54.1 release binary |
 | `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
 
 Features run in lexical order. Each feature is idempotent. Use `--force` to reinstall. Run `dots-doctor` to validate installation.
@@ -87,8 +107,10 @@ Every artifact is checksum-verified before it is unpacked or installed:
 | Source | Checksum |
 |--------|----------|
 | Go | SHA256 from the official `go.dev/dl` JSON index |
-| Neovim, fd | SHA256 from GitHub release metadata (`assets[].digest`) |
-| gum, lazygit, OpenBao, ripgrep | checksum files published in the release |
+| Node.js | SHA256 from the official `nodejs.org` `SHASUMS256.txt` |
+| Neovim, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, bat, fastfetch, yq | SHA256 from GitHub release metadata (`assets[].digest`) |
+| gum, lazygit, OpenBao, ripgrep, jq, k9s, gh, kubectx, kubecolor, opentofu | checksum files published in the release |
+| helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
 
@@ -126,17 +148,37 @@ dots/
 ├── features/
 │   ├── utils.sh               # Shared: version checks, download cache, symlinks
 │   ├── 00_base/               # Shell config symlinks
+│   ├── 00_git/                # global git identity
 │   ├── 00_go/                 # Go install
 │   ├── 00_rust/               # rustup install
 │   ├── 00_neovim/             # Neovim install
 │   ├── 00_launcher/           # Launcher script
+│   ├── 00_direnv/             # direnv release binary
+│   ├── 00_node/               # Node.js LTS install
+│   ├── 00_uv/                 # uv + uvx release binaries
 │   ├── 01_gum/                # gum release binary
 │   ├── 02_opencode/           # opencode + config
 │   ├── 02_ripgrep/            # ripgrep release binary
 │   ├── 02_fd/                 # fd release binary
+│   ├── 02_fzf/                # fzf release binary
+│   ├── 02_hunk/               # hunk release binary + git pager integration
+│   ├── 02_lsd/                # lsd release binary
+│   ├── 02_zoxide/             # zoxide release binary
+│   ├── 02_bat/                # bat release binary
+│   ├── 03_herdr/              # herdr release binary
 │   ├── 03_lazygit/            # lazygit release binary
 │   ├── 03_lazyvim/            # LazyVim submodule + nvim symlink
+│   ├── 03_fastfetch/          # fastfetch release binary + presets
 │   ├── 04_openbao/            # OpenBao binary install
+│   ├── 05_gh/                 # GitHub CLI release binary
+│   ├── 05_helm/               # helm release binary
+│   ├── 05_jq/                 # jq release binary
+│   ├── 05_k9s/                # k9s release binary
+│   ├── 05_kubectl/            # kubectl release binary
+│   ├── 05_kubecolor/          # kubecolor release binary
+│   ├── 05_kubectx/            # kubectx + kubens release binaries
+│   ├── 05_opentofu/           # OpenTofu release binary
+│   ├── 05_yq/                 # yq release binary
 │   └── 99_doctor/             # Test suites + doctor executable
 └── .gitmodules                # LazyVim submodule
 ```

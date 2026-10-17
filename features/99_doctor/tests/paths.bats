@@ -16,6 +16,15 @@ load helpers/utils
   esac
 }
 
+@test "~/.local/node/bin is in PATH (or will be via .profile)" {
+  case ":$PATH:" in
+  *":$HOME/.local/node/bin:"*) ;;
+  *)
+    [ -f "$HOME/.profile" ] && grep -q '.local/node/bin' "$HOME/.profile"
+    ;;
+  esac
+}
+
 @test "~/.local/go/bin is in PATH (or will be via .profile)" {
   case ":$PATH:" in
   *":$HOME/.local/go/bin:"*) ;;
@@ -45,4 +54,10 @@ load helpers/utils
 
 @test "bats is installed in ~/.local/opt/bats-core" {
   [ -x "$HOME/.local/opt/bats-core/bin/bats" ]
+}
+
+@test "default login shell is zsh" {
+  login_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  zsh_path="$(command -v zsh)"
+  [ "$login_shell" = "$zsh_path" ]
 }

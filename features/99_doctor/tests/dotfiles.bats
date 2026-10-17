@@ -36,6 +36,32 @@ load helpers/utils
     [ "$status" -ne 0 ]
 }
 
+@test "~/.zshrc has no sesh integration" {
+    if [ ! -f "$HOME/.zshrc" ]; then skip "no .zshrc"; fi
+    run grep -n 'sesh' "$HOME/.zshrc"
+    [ "$status" -ne 0 ]
+}
+
+# ── Git config ──
+
+@test "git user.name is configured" {
+    run git config --global user.name
+    [ "$status" -eq 0 ]
+    [ "$output" = "Hnatekmar" ]
+}
+
+@test "git user.email is configured" {
+    run git config --global user.email
+    [ "$status" -eq 0 ]
+    [ "$output" = "m.hnatma@gmail.com" ]
+}
+
+@test "git diff opens in hunk via core.pager" {
+    run git config --global core.pager
+    [ "$status" -eq 0 ]
+    [ "$output" = "hunk pager" ]
+}
+
 # ── OpenCode config ──
 
 @test "~/.config/opencode/opencode.json exists (symlinked or real)" {
@@ -45,6 +71,17 @@ load helpers/utils
 @test "~/.config/opencode/opencode.json has no hardcoded /home/martin paths" {
     run grep '/home/martin' "$HOME/.config/opencode/opencode.json"
     [ "$status" -ne 0 ]
+}
+
+@test "opencode has the hunk skills available" {
+    [ -f "$HOME/.config/opencode/skills/hunk-review/SKILL.md" ]
+    [ -f "$HOME/.config/opencode/skills/hunk-extensions/SKILL.md" ]
+}
+
+@test "opencode has the herdr skill available" {
+    [ -f "$HOME/.config/opencode/skills/herdr/SKILL.md" ]
+    run grep '^name: herdr$' "$HOME/.config/opencode/skills/herdr/SKILL.md"
+    [ "$status" -eq 0 ]
 }
 
 # ── Launcher ──

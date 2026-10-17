@@ -12,8 +12,8 @@ WORKDIR /dots
 # Remove distro default dotfiles that conflict with symlink targets
 RUN rm -f /root/.bash_profile /root/.profile
 
-# Ensure Go and go-installed binaries are in PATH for feature installers
-ENV PATH=/root/.local/go/bin:/root/.local/bin:/root/go/bin:/root/.cargo/bin:$PATH
+# Ensure Node, Go and go-installed binaries are in PATH for feature installers
+ENV PATH=/root/.local/node/bin:/root/.local/go/bin:/root/.local/bin:/root/go/bin:/root/.cargo/bin:$PATH
 
 # Run the full bootstrap at build time. If any feature installer fails, the build fails — this is the CI gate.
 RUN bash bootstrap.sh

@@ -26,8 +26,9 @@ Environment:
                            \${XDG_CACHE_HOME:-\$HOME/.cache}/dots). Point it at
                            a shared directory to reuse downloads across
                            machines; set it to an empty string to disable.
-  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/lazygit from source instead of
-                           installing the pinned release binaries.
+  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/fzf/zoxide/lsd/yq/k9s/kubecolor/herdr
+                           from source instead of installing the pinned release
+                           binaries.
 EOF
 }
 
@@ -82,8 +83,29 @@ else
     fi
 fi
 
-# Ensure go + cargo + go-installed binaries are in PATH for all feature installers
-export PATH="$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+# Ensure node + go + cargo + go-installed binaries are in PATH for all feature installers
+export PATH="$HOME/.local/node/bin:$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+
+# Make zsh the login shell. This is a system-level setting, so it belongs here
+# next to the prerequisite installation rather than in a feature. chsh is
+# setuid: root can change it unattended, while a non-root run prints the
+# command for the user to run instead of hanging on a password prompt.
+ZSH_PATH="$(command -v zsh || true)"
+if [ -n "$ZSH_PATH" ]; then
+    SHELL_USER="${SUDO_USER:-$(id -un)}"
+    CURRENT_SHELL="$(getent passwd "$SHELL_USER" | cut -d: -f7)"
+    if [ "$CURRENT_SHELL" = "$ZSH_PATH" ]; then
+        echo "==> $SHELL_USER already uses zsh as the default shell"
+    elif [ "$(id -u)" = "0" ] && command -v chsh >/dev/null 2>&1; then
+        if chsh -s "$ZSH_PATH" "$SHELL_USER"; then
+            echo "==> Default shell for $SHELL_USER set to $ZSH_PATH (log in again to use it)"
+        else
+            echo "WARN: could not change the default shell for $SHELL_USER" >&2
+        fi
+    else
+        echo "==> To make zsh the default shell: chsh -s \"$ZSH_PATH\""
+    fi
+fi
 
 # Where downloads land. Reported up front because a shared cache (NAS) is the
 # difference between a fast re-run and re-downloading every toolchain.
