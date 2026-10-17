@@ -4,7 +4,9 @@ set -euo pipefail
 source "$(dirname "$0")/../utils.sh"
 
 # Installs the Rust stable toolchain via rustup into ~/.cargo.
-# ripgrep and fd are then built from source with `cargo install`.
+# Nothing in this repo requires cargo any more — ripgrep and fd install
+# prebuilt binaries — but the toolchain is kept for Rust development and for
+# DOTS_BUILD_FROM_SOURCE=1 builds.
 
 # If cargo is present, either skip or (under DOTS_FORCE) update the toolchain.
 if command -v cargo >/dev/null 2>&1; then
@@ -18,18 +20,18 @@ if command -v cargo >/dev/null 2>&1; then
 fi
 
 RUSTUP_TARGET="$(map_arch x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu)"
+CACHE_KEY="rustup/${RUSTUP_TARGET}"
 
 TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
 echo "==> Downloading rustup-init..."
 RUSTUP_BASE="https://static.rust-lang.org/rustup/dist/${RUSTUP_TARGET}"
-curl --proto '=https' --tlsv1.2 -sSfL "$RUSTUP_BASE/rustup-init" -o "$TMP_FOLDER/rustup-init"
-curl --proto '=https' --tlsv1.2 -sSfL "$RUSTUP_BASE/rustup-init.sha256" -o "$TMP_FOLDER/rustup-init.sha256"
-
-echo "==> Verifying rustup-init checksum..."
+fetch_cached "$RUSTUP_BASE/rustup-init.sha256" "$CACHE_KEY/rustup-init.sha256" "$TMP_FOLDER/rustup-init.sha256"
 EXPECTED=$(cut -d' ' -f1 "$TMP_FOLDER/rustup-init.sha256")
-verify_sha256 "$TMP_FOLDER/rustup-init" "$EXPECTED"
+[ -n "$EXPECTED" ] || { echo "ERROR: empty rustup-init checksum file" >&2; exit 1; }
+
+fetch_cached "$RUSTUP_BASE/rustup-init" "$CACHE_KEY/rustup-init" "$TMP_FOLDER/rustup-init" "$EXPECTED"
 
 chmod +x "$TMP_FOLDER/rustup-init"
 

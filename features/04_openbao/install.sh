@@ -16,24 +16,22 @@ fi
 TMP_FOLDER=$(mktemp -d)
 trap 'rm -rf "$TMP_FOLDER"' EXIT
 
-cd "$TMP_FOLDER"
-
 TARBALL="openbao_${OPENBAO_VERSION}_linux_${ARCH}.tar.gz"
+CACHE_KEY="openbao/${OPENBAO_VERSION}"
+BASE="https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSION}"
 
-echo "==> Downloading OpenBao $OPENBAO_VERSION..."
-curl -LO "https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSION}/${TARBALL}"
-curl -LO "https://github.com/openbao/openbao/releases/download/v${OPENBAO_VERSION}/checksums.txt"
+echo "==> Installing OpenBao $OPENBAO_VERSION..."
+fetch_cached "$BASE/checksums.txt" "$CACHE_KEY/checksums.txt" "$TMP_FOLDER/checksums.txt"
 
-echo "==> Verifying checksum..."
 # Pull the expected hash for our exact tarball out of checksums.txt. This fails
 # hard if the tarball isn't listed (unlike `sha256sum --ignore-missing`, which
 # would silently pass if the name ever stopped matching).
-EXPECTED=$(awk -v f="$TARBALL" '$2 == f {print $1}' checksums.txt)
-verify_sha256 "$TARBALL" "$EXPECTED"
+EXPECTED=$(awk -v f="$TARBALL" '$2 == f {print $1}' "$TMP_FOLDER/checksums.txt")
+[ -n "$EXPECTED" ] || { echo "ERROR: $TARBALL missing from OpenBao checksums.txt" >&2; exit 1; }
 
-tar -xzf "$TARBALL"
+fetch_cached "$BASE/$TARBALL" "$CACHE_KEY/$TARBALL" "$TMP_FOLDER/$TARBALL" "$EXPECTED"
 
-mkdir -p "$HOME/.local/bin"
-cp bao "$HOME/.local/bin/"
+tar -xzf "$TMP_FOLDER/$TARBALL" -C "$TMP_FOLDER"
+install_bin "$TMP_FOLDER/bao" bao
 
 echo "==> OpenBao $OPENBAO_VERSION installed."

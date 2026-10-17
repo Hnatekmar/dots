@@ -20,7 +20,14 @@ Usage: dots-bootstrap.sh [--force] [--only <feature>] [--list]
   --only <feature> Run a single feature (e.g. 00_go, 02_ripgrep).
   --list           Print available features and exit.
 
-  DOTS_FORCE=1 in the environment is equivalent to --force.
+Environment:
+  DOTS_FORCE=1             Equivalent to --force.
+  DOTS_CACHE_DIR=<path>    Where downloads are cached (default
+                           \${XDG_CACHE_HOME:-\$HOME/.cache}/dots). Point it at
+                           a shared directory to reuse downloads across
+                           machines; set it to an empty string to disable.
+  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/lazygit from source instead of
+                           installing the pinned release binaries.
 EOF
 }
 
@@ -42,10 +49,10 @@ done
 export DOTS_FORCE
 
 # Install build prerequisites. Names differ slightly per distro
-# (python vs python3), so handle them explicitly in one place. Everything
-# else in the repo is built from source (go install / cargo install) and is
-# fully distro-agnostic. Requires root for system package installation;
-# when running as a non-root user, we check for prereqs instead.
+# (python vs python3), so handle them explicitly in one place. Tool installs
+# are distro-agnostic: pinned release binaries where upstream publishes them,
+# plus the Go toolchain (gopls build) and rustup. Requires root for system
+# package installation; when running as a non-root user, we check for prereqs.
 # Note: zsh, git, and curl are system packages; stow is replaced by a
 # built-in symlink function (stow_pkg in features/utils.sh).
 
@@ -77,6 +84,18 @@ fi
 
 # Ensure go + cargo + go-installed binaries are in PATH for all feature installers
 export PATH="$HOME/.local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+
+# Where downloads land. Reported up front because a shared cache (NAS) is the
+# difference between a fast re-run and re-downloading every toolchain.
+if [ "${DOTS_CACHE_DIR+x}" = "x" ]; then
+    if [ -n "$DOTS_CACHE_DIR" ]; then
+        echo "==> Download cache: $DOTS_CACHE_DIR"
+    else
+        echo "==> Download cache: disabled (DOTS_CACHE_DIR is empty)"
+    fi
+else
+    echo "==> Download cache: ${XDG_CACHE_HOME:-$HOME/.cache}/dots"
+fi
 
 # Run feature installers in lexical order
 run_feature() {

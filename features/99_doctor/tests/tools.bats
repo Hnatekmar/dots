@@ -83,6 +83,15 @@ load helpers/utils
     assert_cmd lazygit
 }
 
+# ── prebuilt binaries ──
+
+@test "gum, rg, fd and lazygit install as prebuilt binaries in ~/.local/bin" {
+    [ -x "$HOME/.local/bin/gum" ]
+    [ -x "$HOME/.local/bin/rg" ]
+    [ -x "$HOME/.local/bin/fd" ]
+    [ -x "$HOME/.local/bin/lazygit" ]
+}
+
 # ── gum ──
 
 @test "gum is installed" {
