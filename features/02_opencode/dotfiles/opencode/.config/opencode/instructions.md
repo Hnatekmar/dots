@@ -12,9 +12,15 @@ Fallback rules, only if the skill cannot load:
 
 # Images
 
-Use the `describe_image` tool to look at an image. Do not use `read` on image
-files. `read` puts the picture into the conversation, and every later request
-replays it. After enough images the backend rejects the turn.
+Use the `describe_image` tool for an image. Do not use `read` on image files.
+`read` puts the picture into the conversation. Every later request sends it
+again. After enough images the backend rejects the turn.
+
+For small detail, crop the image with `shell`. Then call `describe_image` on
+the crop.
+
+If the description is insufficient, ask a narrower question. Do not use `read`
+instead.
 
 # Prose
 
