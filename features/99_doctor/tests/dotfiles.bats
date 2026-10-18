@@ -84,6 +84,25 @@ load helpers/utils
     [ "$status" -eq 0 ]
 }
 
+@test "opencode has the image-generation skill and its script" {
+    [ -f "$HOME/.config/opencode/skills/image-generation/SKILL.md" ]
+    [ -x "$HOME/.config/opencode/skills/image-generation/scripts/generate.sh" ]
+}
+
+@test "shared skill set was installed by npx skills" {
+    # 02_opencode installs mattpocock/skills into opencode's global
+    # agent-compatible dir. A missing tree means the npx step was skipped
+    # (no network) or failed; re-run the feature.
+    [ -f "$HOME/.agents/skills/code-review/SKILL.md" ]
+    [ -f "$HOME/.agents/skills/tdd/SKILL.md" ]
+}
+
+@test "stale vendored skill trees are gone" {
+    for bucket in engineering in-progress misc productivity deprecated; do
+        [ ! -e "$HOME/.config/opencode/skills/$bucket" ]
+    done
+}
+
 # ── Launcher ──
 
 @test "~/.local/bin/dots-bootstrap.sh is a symlink" {
