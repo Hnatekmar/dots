@@ -51,6 +51,10 @@ jobs:
   build:
     runs-on: [self-hosted, dind]
     timeout-minutes: 45
+    env:
+      # The runner config publishes the dind daemon on this address; the job
+      # container has no local docker.sock.
+      DOCKER_HOST: tcp://host.docker.internal:2375
     steps:
       - uses: actions/checkout@v4
         with:
