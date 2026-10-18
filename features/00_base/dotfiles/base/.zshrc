@@ -2,7 +2,10 @@
 set -o vi
 
 export ZSH="$HOME/.oh-my-zsh"
-export PATH="$HOME/.local/node/bin:$HOME/.local/go/bin:$HOME/go/bin:$PATH"
+# The whole PATH belongs here: fzf, zoxide and lsd are invoked further down, so
+# ~/.local/bin has to be on PATH before that, not exported at the bottom of the
+# file. Missing it produced "command not found: fzf / zoxide" on every login.
+export PATH="$HOME/.local/bin:$HOME/.local/node/bin:$HOME/.local/go/bin:$HOME/.cargo/bin:$HOME/go/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 
 ZSH_THEME="3den"
 
@@ -14,6 +17,12 @@ plugins=(
     zsh-autosuggestions
     zsh-syntax-highlighting
 )
+
+# Defer to an agent that the session already provides (ssh -A). Without this the
+# plugin sources ~/.ssh/environment-<host> from an earlier shell and shadows the
+# forwarded agent with a local, empty one, so git over SSH fails with
+# "Permission denied (publickey)".
+zstyle :omz:plugins:ssh-agent honor-existing yes
 
 source $ZSH/oh-my-zsh.sh
 
@@ -41,7 +50,6 @@ export EDITOR=nvim
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 eval "$(zoxide init zsh)"
-export PATH="$HOME/.local/bin:$HOME/.local/node/bin:$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
