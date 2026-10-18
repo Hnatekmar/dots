@@ -4,9 +4,52 @@ set -euo pipefail
 source "$(dirname "$0")/../utils.sh"
 
 OPENCODE_VERSION=2.0.32
+# The skill installer is a tool too: pin it so a bootstrap months from now
+# behaves like today's. Bump deliberately, then re-run this feature.
+SKILLS_CLI_VERSION=1.7.2
 CACHE_KEY="opencode/${OPENCODE_VERSION}"
 
+# Drop skill trees that an older revision of this repo stowed. They are
+# installed by `npx skills` now (see below), and a stale copy in
+# ~/.config/opencode/skills would shadow the fresh one. Only trees made
+# entirely of symlinks are removed: a directory holding real files belongs to
+# the user and stays.
+prune_stowed_skill_tree() {
+    local dir="$1"
+    [ -d "$dir" ] || return 0
+    if [ -n "$(find "$dir" -type f -print -quit)" ]; then
+        echo "==> Keeping $dir (it holds real files, not stow symlinks)"
+        return 0
+    fi
+    rm -rf "$dir"
+}
+
+for bucket in engineering in-progress misc productivity deprecated; do
+    prune_stowed_skill_tree "$HOME/.config/opencode/skills/$bucket"
+done
+
 stow_pkg "$(dirname "$0")/dotfiles" opencode
+
+# Shared skill set from mattpocock/skills. `npx skills` resolves the repo,
+# picks the skill folders and copies them to opencode's global
+# agent-compatible dir (~/.agents/skills), which opencode loads alongside
+# ~/.config/opencode/skills. --copy keeps plain files (no symlinks into
+# npx's cache); DO_NOT_TRACK=1 disables the CLI's install telemetry.
+install_shared_skills() {
+    if ! command -v npx >/dev/null 2>&1; then
+        echo "WARN: npx not found (run 00_node first); skipping the shared skill set" >&2
+        return 0
+    fi
+    echo "==> Installing mattpocock/skills via npx skills@${SKILLS_CLI_VERSION}"
+    if DO_NOT_TRACK=1 npx -y "skills@${SKILLS_CLI_VERSION}" add mattpocock/skills \
+        --skill '*' -a opencode -g --copy -y; then
+        echo "==> Shared skill set installed in ~/.agents/skills"
+    else
+        echo "WARN: 'npx skills add' failed; re-run this feature to retry" >&2
+    fi
+}
+
+install_shared_skills
 
 if check_command_version opencode "$OPENCODE_VERSION"; then
     echo "==> opencode $OPENCODE_VERSION already installed, skipping"
