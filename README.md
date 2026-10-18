@@ -4,10 +4,18 @@ Linux dotfiles and tool bootstrap system. Each directory in `features/` is a sel
 
 Works on Fedora, Debian/Ubuntu, and Arch. Only `bootstrap.sh` has distro-specific code. Tools install from pinned upstream release binaries with checksum verification; `DOTS_BUILD_FROM_SOURCE=1` rebuilds the Go/Rust tools from source instead.
 
+## Repository
+
+Development happens on the lab Forgejo at
+`https://forgejo.srv.hnatekmar.dev/hnatekmar/dots`, which runs CI. Every push is
+mirrored to `https://github.com/Hnatekmar/dots`; the GitHub copy is a mirror,
+not a second source. The clone lines below include both.
+
 ## Quick start
 
 ```bash
-git clone https://github.com/Hnatekmar/dots.git
+git clone https://forgejo.srv.hnatekmar.dev/hnatekmar/dots.git   # lab, canonical
+git clone https://github.com/Hnatekmar/dots.git                  # public mirror
 cd dots
 bash bootstrap.sh
 ```

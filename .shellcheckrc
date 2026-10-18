@@ -1,0 +1,3 @@
+# Every installer sources ../utils.sh through a computed path that shellcheck
+# cannot follow. The file is always present in the repo, so the notice is noise.
+disable=SC1091

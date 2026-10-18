@@ -1,0 +1,8 @@
+# actionlint (https://github.com/rhysd/actionlint) cannot know self-hosted labels.
+# Declare them here so the lint step is meaningful:
+#   actionlint -config-file .github/actionlint.yaml .forgejo/workflows/*.yml
+self-hosted-runner:
+  labels:
+    - self-hosted
+    - dind
+    - mgmt

@@ -1,0 +1,75 @@
+# CI for dots. The Dockerfile is the test gate: `make build` runs bootstrap.sh
+# and dots-doctor in the image, so a broken feature or a failed BATS suite fails
+# the build. The lint job keeps shellcheck at the same version as the local
+# `make lint`.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'bootstrap.sh'
+      - 'features/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'Makefile'
+      - '.shellcheckrc'
+      - '.github/actionlint.yaml'
+      - '.forgejo/workflows/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: [self-hosted, mgmt]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: |
+          set -euo pipefail
+          ver=0.11.0
+          curl -sfL "https://github.com/koalaman/shellcheck/releases/download/v${ver}/shellcheck-v${ver}.linux.x86_64.tar.xz" \
+            | tar -xJ -C /tmp
+          export PATH="/tmp/shellcheck-v${ver}:$PATH"
+          shellcheck --version
+          make lint
+
+      - name: actionlint
+        run: |
+          set -euo pipefail
+          ver=1.7.12
+          curl -sfL "https://github.com/rhysd/actionlint/releases/download/v${ver}/actionlint_${ver}_linux_amd64.tar.gz" \
+            | tar -xz -C /tmp actionlint
+          /tmp/actionlint -shellcheck= -config-file .github/actionlint.yaml .forgejo/workflows/*.yml
+
+  build:
+    runs-on: [self-hosted, dind]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # features/03_lazyvim/lazyvim is a submodule; without it the nvim
+          # feature falls back to a network clone during the image build.
+          submodules: recursive
+
+      - name: Docker CLI
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            apt-get update -qq
+            apt-get install -y -qq docker.io
+          fi
+          docker version --format 'client={{.Client.Version}} server={{.Server.Version}}'
+
+      - name: Build image (bootstrap + dots-doctor)
+        run: docker build --pull -t "dots-ci:${GITHUB_SHA:0:12}" .
+
+      - name: Remove the image
+        if: always()
+        run: docker image rm -f "dots-ci:${GITHUB_SHA:0:12}" || true

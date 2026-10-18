@@ -33,6 +33,16 @@ The `make test-*` targets re-run `dots-doctor` in the built image for a clean re
 Note: `make build` / `make test-*` default to the Fedora image; `test-debian`
 and `test-arch` pass `--build-arg BASE=...` to the same Dockerfile.
 
+## Repository and CI
+
+- Canonical remote: `https://forgejo.srv.hnatekmar.dev/hnatekmar/dots`. Push
+  there; GitHub is an automatic push mirror.
+- CI: `.forgejo/workflows/ci.yml` runs `make lint` on the `mgmt` lane and
+  `docker build` on the `dind` lane. The Dockerfile's `RUN bash bootstrap.sh`
+  and `RUN dots-doctor` are the test gate.
+- Do not push to GitHub directly: a commit that only lands there is not picked
+  up by CI and is overwritten by the next mirror sync.
+
 ## Running the bootstrap (without containers)
 
 ```bash

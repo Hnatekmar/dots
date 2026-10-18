@@ -22,7 +22,7 @@ fi
 # Initialize lazyvim submodule
 LAZYVIM_DIR="$SCRIPT_DIR/lazyvim"
 
-if [ ! -d "$LAZYVIM_DIR" ] || [ -z "$(ls -A "$LAZYVIM_DIR" 2>/dev/null | grep -v '^\.git$')" ]; then
+if [ ! -d "$LAZYVIM_DIR" ] || ! find "$LAZYVIM_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -print -quit | grep -q .; then
     echo "==> Initializing lazyvim submodule..."
     DOTS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
