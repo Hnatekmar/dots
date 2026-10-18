@@ -74,6 +74,10 @@ jobs:
       - name: Build image (bootstrap + dots-doctor)
         run: docker build --pull -t "dots-ci:${GITHUB_SHA:0:12}" .
 
-      - name: Remove the image
+      - name: Remove the image and build cache
         if: always()
-        run: docker image rm -f "dots-ci:${GITHUB_SHA:0:12}" || true
+        run: |
+          docker image rm -f "dots-ci:${GITHUB_SHA:0:12}" || true
+          # Every commit invalidates the COPY layer, so a retained build cache
+          # only fills the runner's dind volume.
+          docker builder prune -af >/dev/null || true
