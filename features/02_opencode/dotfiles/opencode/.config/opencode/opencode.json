@@ -177,7 +177,7 @@
   },
   "agent": {
     "build": {
-      "description": "Direct coding agent. Works solo (no orchestration, no delegation). DeepSeek V4.1 Flash, 1M context.",
+      "description": "Direct coding agent. Works solo (no orchestration, no delegation). Uses the proxy power-coding lane.",
       "mode": "primary",
       "model": "lmproxy/power-coding"
     }

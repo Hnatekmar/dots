@@ -34,3 +34,4 @@ ceb7e88c6b681f0515d135dcdfad54f5eb4373b25ce6172197cd9a69c758063f  nvim-linux-arm
 189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b  yq_linux_arm64
 2d93385b99f3e82cf2701609a1bffcad863fbeb75aa3fe7eb6be4d29be68b1ae  zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz
 f1f16c5d6298d63dee467eedea1cdcd8490e43e493bea43acd416dc9033ef641  zoxide-0.10.0-aarch64-unknown-linux-musl.tar.gz
+270cd2261b2b20b056a8252756d1783320bbcbe6c14fa73779d036a9e7977a4e  dev-envs-v0.3.0.tar.gz

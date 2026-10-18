@@ -3,7 +3,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/../utils.sh"
 
-OPENCODE_VERSION=2.0.26
+OPENCODE_VERSION=2.0.32
 CACHE_KEY="opencode/${OPENCODE_VERSION}"
 
 stow_pkg "$(dirname "$0")/dotfiles" opencode
