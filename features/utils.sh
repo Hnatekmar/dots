@@ -129,7 +129,7 @@ fetch_cached() {
         [ -w "$root/$(dirname "$key")" ]; then
         local tmp
         tmp="$(mktemp "$root/$key.XXXXXX")"
-        if curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o "$tmp" "$url"; then
+        if curl -fsSL --connect-timeout 15 --speed-limit 1024 --speed-time 60 --retry 3 --retry-delay 2 --retry-all-errors -o "$tmp" "$url"; then
             if [ -n "$expected" ] && ! digest_is "$tmp" "$expected"; then
                 echo "ERROR: checksum mismatch for $url" >&2
                 echo "  Expected: $expected" >&2
@@ -146,7 +146,7 @@ fetch_cached() {
         return 1
     fi
 
-    curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o "$dest" "$url"
+    curl -fsSL --connect-timeout 15 --speed-limit 1024 --speed-time 60 --retry 3 --retry-delay 2 --retry-all-errors -o "$dest" "$url"
     [ -z "$expected" ] || verify_sha256 "$dest" "$expected"
 }
 
