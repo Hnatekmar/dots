@@ -195,6 +195,13 @@ dots/
   `reasoningEffort` does not reach the request; effort comes from the
   model-level `options.reasoningEffort`. Declare `limit: {context, output}` per
   model or context accounting and compaction run blind.
+- **OpenCode network switches live in a wrapper** (`opencode-wrapper.sh`,
+  installed to `~/.local/bin/opencode`). The model-catalog fetch has no config
+  key, and exporting in `~/.zshrc` would miss `run`, cron and the managed
+  service the CLI spawns; the wrapper covers all of them. Verified on 2.1.4
+  with a DNS-level trace: with a local provider the only outbound name is the
+  proxy. `OPENCODE_DISABLE_CHANNEL_DB` is not a network switch — it only renames
+  the database file.
 - **OpenCode 2.1 still honours the 2.0 key names.** Verified on 2.1.4 against
   this config: `agent`, `permission`, `plugin`, `snapshot`, `provider` and
   `small_model` load with zero normalization diagnostics, the custom agents

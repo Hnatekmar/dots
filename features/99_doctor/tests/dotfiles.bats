@@ -112,6 +112,23 @@ load helpers/utils
     [ "$status" -ne 0 ]
 }
 
+@test "opencode wrapper disables model fetch and update checks" {
+    # opencode has no config key for the catalog fetch; the switches live in the
+    # wrapper so every launch path (TUI, run, spawned service) inherits them.
+    local w="$HOME/.local/bin/opencode"
+    if [ ! -f "$w" ]; then skip "no wrapper (installed by 02_opencode)"; fi
+    run grep -q 'OPENCODE_DISABLE_MODELS_FETCH:-1' "$w"
+    [ "$status" -eq 0 ]
+    run grep -q 'OPENCODE_DISABLE_AUTOUPDATE:-1' "$w"
+    [ "$status" -eq 0 ]
+}
+
+@test "opencode resolves to the wrapper, not a stray binary" {
+    if ! command -v opencode >/dev/null 2>&1; then skip "opencode not installed"; fi
+    run command -v opencode
+    [ "$output" = "$HOME/.local/bin/opencode" ]
+}
+
 @test "opencode resolves the custom agents" {
     # Catches a silent schema change: if the agent block stops being read, the
     # built-ins remain and these agents vanish without any error.
