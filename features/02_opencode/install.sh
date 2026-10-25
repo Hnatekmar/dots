@@ -77,13 +77,24 @@ install_shared_skills() {
 
 install_shared_skills
 
-# Repair the symlink before the idempotency check. check_command_version
+# Install the wrapper before the idempotency check. check_command_version
 # resolves whatever `opencode` PATH offers, so a binary from an older install
 # (or one in /usr/local/bin) would otherwise satisfy the check while
-# ~/.local/bin/opencode stays missing, and the run would exit without linking.
-# A dangling link here fails the check, which is what we want.
-mkdir -p "$HOME/.local/bin"
-ln -sfn "$HOME/.opencode/bin/opencode" "$HOME/.local/bin/opencode"
+# ~/.local/bin/opencode stays missing, and the run would exit without placing
+# the wrapper. A wrapper with no binary behind it fails the check, which is
+# what we want.
+install_wrapper() {
+    local src="$FEATURE_DIR/opencode-wrapper.sh"
+    local dst="$HOME/.local/bin/opencode"
+    [ -f "$src" ] || return 0
+    mkdir -p "$HOME/.local/bin"
+    # rm first: cat/cp onto an existing symlink would write through it into
+    # ~/.opencode/bin/opencode and destroy the vendor binary.
+    rm -f "$dst"
+    cp "$src" "$dst"
+    chmod 0755 "$dst"
+}
+install_wrapper
 
 if check_command_version opencode "$OPENCODE_VERSION"; then
     hash -r 2>/dev/null || true
@@ -160,4 +171,4 @@ if ! install_from_cache; then
     bash "$TMP_FOLDER/install.sh" --version "$OPENCODE_VERSION" --no-modify-path
 fi
 
-echo "==> opencode ${OPENCODE_VERSION} installed (~/.local/bin/opencode -> ~/.opencode/bin/opencode)"
+echo "==> opencode ${OPENCODE_VERSION} installed (~/.local/bin/opencode wraps ~/.opencode/bin/opencode)"

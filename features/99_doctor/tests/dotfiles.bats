@@ -112,14 +112,39 @@ load helpers/utils
     [ "$status" -ne 0 ]
 }
 
-@test "opencode resolves the custom agents" {
-    # Catches a silent schema change: if the agent block stops being read, the
-    # built-ins remain and these agents vanish without any error.
-    if ! command -v opencode >/dev/null 2>&1; then skip "opencode not installed"; fi
-    run opencode debug agents
+@test "opencode wrapper disables model fetch and update checks" {
+    # opencode has no config key for the catalog fetch; the switches live in the
+    # wrapper so every launch path (TUI, run, spawned service) inherits them.
+    local w="$HOME/.local/bin/opencode"
+    if [ ! -f "$w" ]; then skip "no wrapper (installed by 02_opencode)"; fi
+    run grep -q 'OPENCODE_DISABLE_MODELS_FETCH:-1' "$w"
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q 'adversarial-reviewer'
-    echo "$output" | grep -q 'lead'
+    run grep -q 'OPENCODE_DISABLE_AUTOUPDATE:-1' "$w"
+    [ "$status" -eq 0 ]
+}
+
+@test "opencode resolves to the wrapper, not a stray binary" {
+    if ! command -v opencode >/dev/null 2>&1; then skip "opencode not installed"; fi
+    run command -v opencode
+    [ "$output" = "$HOME/.local/bin/opencode" ]
+}
+
+@test "opencode agent definitions are present and bound to a model" {
+    # `opencode debug agents` would prove they load, but it needs a live managed
+    # service and returns nothing useful inside the image build, so assert the
+    # definition files instead. Actual resolution was verified by hand against
+    # 2.1.4 (`run --standalone`); this guards against a file going missing or
+    # losing its model binding.
+    local dir="$HOME/.config/opencode/agents"
+    for agent in lead researcher reviewer adversarial-reviewer test-runner; do
+        [ -f "$dir/$agent.md" ] || { echo "missing agent file: $agent.md"; false; }
+        grep -q '^model: lmproxy/' "$dir/$agent.md" || { echo "$agent.md has no lmproxy model"; false; }
+    done
+    # build is defined in opencode.json, not as a markdown agent.
+    run grep -q '"build": {' "$HOME/.config/opencode/opencode.json"
+    [ "$status" -eq 0 ]
+    run grep -q '"default_agent": "lead"' "$HOME/.config/opencode/opencode.json"
+    [ "$status" -eq 0 ]
 }
 
 # ── Launcher ──
