@@ -6,6 +6,30 @@ permission:
   edit: deny
   bash:
     "*": deny
+    # This agent is asked whether the tests still pass, so it needs read-only
+    # inspection plus the test commands. Without these the question is
+    # unanswerable and the report becomes speculation.
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "git show*": allow
+    "ls*": allow
+    "cat *": allow
+    "grep *": allow
+    "rg *": allow
+    "find *": allow
+    "head *": allow
+    "tail *": allow
+    "wc *": allow
+    "pwd": allow
+    "go test*": allow
+    "go build*": allow
+    "cargo test*": allow
+    "cargo check*": allow
+    "python3 -m pytest*": allow
+    "pytest*": allow
+    "npm test*": allow
+    "make test*": allow
 ---
 
 You are a senior code reviewer. Review changes for:

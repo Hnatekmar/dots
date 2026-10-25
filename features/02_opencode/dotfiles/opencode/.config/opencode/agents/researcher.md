@@ -9,8 +9,8 @@ permission:
     "specs/**": allow
     ".scratch/**": allow
   bash:
-    "git push *": deny
-    "rm *": deny
+    "git push*": deny
+    "rm*": deny
 ---
 
 You are a research agent. Your job is to explore codebases, find relevant code,

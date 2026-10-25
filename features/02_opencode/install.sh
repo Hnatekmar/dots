@@ -3,11 +3,13 @@ set -euo pipefail
 
 source "$(dirname "$0")/../utils.sh"
 
-OPENCODE_VERSION=2.0.32
+OPENCODE_VERSION=2.1.4
 # The skill installer is a tool too: pin it so a bootstrap months from now
 # behaves like today's. Bump deliberately, then re-run this feature.
 SKILLS_CLI_VERSION=1.7.2
 CACHE_KEY="opencode/${OPENCODE_VERSION}"
+FEATURE_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_LOCK="$FEATURE_DIR/skills-lock.json"
 
 # Drop skill trees that an older revision of this repo stowed. They are
 # installed by `npx skills` now (see below), and a stale copy in
@@ -30,17 +32,41 @@ done
 
 stow_pkg "$(dirname "$0")/dotfiles" opencode
 
-# Shared skill set from mattpocock/skills. `npx skills` resolves the repo,
-# picks the skill folders and copies them to opencode's global
+# Shared skill set from mattpocock/skills, installed into opencode's global
 # agent-compatible dir (~/.agents/skills), which opencode loads alongside
-# ~/.config/opencode/skills. --copy keeps plain files (no symlinks into
-# npx's cache); DO_NOT_TRACK=1 disables the CLI's install telemetry.
+# ~/.config/opencode/skills.
+#
+# skills-lock.json pins the SET: 38 skill names with their source paths. Restore
+# from it so a skill added upstream does not appear in the agent's instruction
+# space on the next bootstrap. It does not pin content (the CLI stores a hash
+# but does not verify it on restore); pinning bytes would mean vendoring, which
+# this repo forbids because a stowed copy shadows the npx-installed one.
+# DO_NOT_TRACK=1 disables the CLI's install telemetry.
 install_shared_skills() {
     if ! command -v npx >/dev/null 2>&1; then
         echo "WARN: npx not found (run 00_node first); skipping the shared skill set" >&2
         return 0
     fi
-    echo "==> Installing mattpocock/skills via npx skills@${SKILLS_CLI_VERSION}"
+
+    if [ -f "$SKILLS_LOCK" ]; then
+        echo "==> Restoring the pinned skill set from skills-lock.json"
+        # experimental_install reads the lockfile from the working directory.
+        # -g puts the result in ~/.agents/skills. Without it the CLI would fill
+        # .agents/skills inside the repo instead, so a project-scope result
+        # counts as a failure: check the global tree and clean up any stray.
+        if ( cd "$FEATURE_DIR" && DO_NOT_TRACK=1 npx -y "skills@${SKILLS_CLI_VERSION}" experimental_install -g -y ) \
+            && [ -f "$HOME/.agents/skills/code-review/SKILL.md" ]; then
+            echo "==> Shared skill set restored from the lockfile"
+            return 0
+        fi
+        if [ -d "$FEATURE_DIR/.agents" ]; then
+            rm -rf "$FEATURE_DIR/.agents"
+            echo "WARN: restore wrote into the repo (no -g support); removed it" >&2
+        fi
+        echo "WARN: lockfile restore failed; falling back to an unpinned install" >&2
+    fi
+
+    echo "==> Installing mattpocock/skills via npx skills@${SKILLS_CLI_VERSION} (unpinned set)"
     if DO_NOT_TRACK=1 npx -y "skills@${SKILLS_CLI_VERSION}" add mattpocock/skills \
         --skill '*' -a opencode -g --copy -y; then
         echo "==> Shared skill set installed in ~/.agents/skills"
@@ -51,7 +77,34 @@ install_shared_skills() {
 
 install_shared_skills
 
+# Install the wrapper before the idempotency check. check_command_version
+# resolves whatever `opencode` PATH offers, so a binary from an older install
+# (or one in /usr/local/bin) would otherwise satisfy the check while
+# ~/.local/bin/opencode stays missing, and the run would exit without placing
+# the wrapper. A wrapper with no binary behind it fails the check, which is
+# what we want.
+install_wrapper() {
+    local src="$FEATURE_DIR/opencode-wrapper.sh"
+    local dst="$HOME/.local/bin/opencode"
+    [ -f "$src" ] || return 0
+    mkdir -p "$HOME/.local/bin"
+    # rm first: cat/cp onto an existing symlink would write through it into
+    # ~/.opencode/bin/opencode and destroy the vendor binary.
+    rm -f "$dst"
+    cp "$src" "$dst"
+    chmod 0755 "$dst"
+}
+install_wrapper
+
 if check_command_version opencode "$OPENCODE_VERSION"; then
+    hash -r 2>/dev/null || true
+    resolved="$(command -v opencode 2>/dev/null || true)"
+    if [ -n "$resolved" ] && [ "$resolved" != "$HOME/.local/bin/opencode" ]; then
+        echo "WARN: opencode resolves to $resolved, not $HOME/.local/bin/opencode" >&2
+    fi
+    # check_command_version compares with >=, not ==: a newer binary satisfies
+    # it and is left in place. opencode.json sets autoupdate=false for that
+    # reason, so the version only moves when OPENCODE_VERSION is bumped.
     echo "==> opencode $OPENCODE_VERSION already installed, skipping"
     exit 0
 fi
@@ -118,5 +171,4 @@ if ! install_from_cache; then
     bash "$TMP_FOLDER/install.sh" --version "$OPENCODE_VERSION" --no-modify-path
 fi
 
-mkdir -p "$HOME/.local/bin"
-ln -sfn "$HOME/.opencode/bin/opencode" "$HOME/.local/bin/opencode"
+echo "==> opencode ${OPENCODE_VERSION} installed (~/.local/bin/opencode wraps ~/.opencode/bin/opencode)"

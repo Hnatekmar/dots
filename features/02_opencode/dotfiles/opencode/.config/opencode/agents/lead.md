@@ -10,7 +10,7 @@ permission:
     reviewer: allow
     adversarial-reviewer: allow
   bash:
-    "git push *": deny
+    "git push*": deny
 ---
 
 You are the lead agent. You plan, route, and edit.

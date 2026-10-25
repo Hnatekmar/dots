@@ -188,6 +188,30 @@ dots/
   `config.json` (which is silently ignored). In the config, a missing
   `{env:VAR}` becomes an empty string and opencode still starts, but a missing
   `{file:...}` target stops the whole server with `ConfigInvalidError`.
+- **OpenCode model block**: an entry accepts `reasoning` and `attachment` per
+  the schema, but the 2.0.x runtime omitted both and logged
+  `configuration normalization diagnostic ... kind=unsupported` on every start.
+  A `variants` entry only supports `disabled`, so a per-variant
+  `reasoningEffort` does not reach the request; effort comes from the
+  model-level `options.reasoningEffort`. Declare `limit: {context, output}` per
+  model or context accounting and compaction run blind.
+- **OpenCode network switches live in a wrapper** (`opencode-wrapper.sh`,
+  installed to `~/.local/bin/opencode`). The model-catalog fetch has no config
+  key, and exporting in `~/.zshrc` would miss `run`, cron and the managed
+  service the CLI spawns; the wrapper covers all of them. Verified on 2.1.4
+  with a DNS-level trace: with a local provider the only outbound name is the
+  proxy. `OPENCODE_DISABLE_CHANNEL_DB` is not a network switch — it only renames
+  the database file.
+- **OpenCode 2.1 still honours the 2.0 key names.** Verified on 2.1.4 against
+  this config: `agent`, `permission`, `plugin`, `snapshot`, `provider` and
+  `small_model` load with zero normalization diagnostics, the custom agents
+  resolve, and a request completes. The 2.1 JSON schema marks all of them
+  deprecated in favour of `agents`/`permissions`/`plugins`/`snapshots`/
+  `providers`, and it changes the model block (`capabilities.reasoning.effort`,
+  `variants` as an array of `{id, body}`). Migrate deliberately, not as part of
+  a version bump: the model-block rewrite is the risky half, and the array
+  variant shape is what would let a per-variant `reasoningEffort` reach the
+  wire.
 - **OpenCode skills come from two places**: local skills (herdr, hunk-*,
   image-generation) are stowed from `features/02_opencode/dotfiles` into
   `~/.config/opencode/skills/`; the shared mattpocock/skills set is installed
