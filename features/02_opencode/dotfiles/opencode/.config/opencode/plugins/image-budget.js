@@ -25,11 +25,13 @@
  * compaction, title generation and generate. Otherwise the first auto-compaction
  * of a long session would fail on the images the agent loop just escaped.
  *
- * Configure the budget with plugin options:
+ * Configure the budget with env vars:
  *
- *   "plugins": [
- *     { "package": "./plugins/image-budget.js", "options": { "keep": 2 } }
- *   ]
+ *   OPENCODE_IMAGE_BUDGET_KEEP=2 opencode
+ *
+ * Not through a `plugins` entry in opencode.json: this file is auto-discovered
+ * from the plugins directory, and listing it again loads a second copy.
+ * OPENCODE_IMAGE_BUDGET_DEBUG=1 logs how many images were dropped per request.
  */
 
 const DEFAULT_KEEP = 3
@@ -84,7 +86,7 @@ function applyBudget(messages, keep) {
 export default {
   id: "image-budget",
   async setup(ctx) {
-    const configured = Number(ctx?.options?.keep)
+    const configured = Number(ctx?.options?.keep ?? process.env.OPENCODE_IMAGE_BUDGET_KEEP)
     const keep = Number.isFinite(configured) && configured >= 0 ? configured : DEFAULT_KEEP
 
     const prune = (event) => {

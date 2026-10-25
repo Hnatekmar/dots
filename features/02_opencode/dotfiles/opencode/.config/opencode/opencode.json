@@ -5,7 +5,7 @@
   "model": "lmproxy/power-coding",
   "enabled_providers": ["lmproxy"],
   "instructions": ["~/.config/opencode/instructions.md"],
-  "autoupdate": true,
+  "autoupdate": false,
   "share": "disabled",
   "snapshot": true,
   "provider": {
@@ -17,8 +17,11 @@
       },
       "models": {
         "power-thinking": {
-          "reasoning": true,
           "name": "power-thinking",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
           "variants": {
             "minimal": {
               "reasoningEffort": "minimal"
@@ -48,8 +51,11 @@
           }
         },
         "power-coding": {
-          "reasoning": true,
           "name": "power-coding",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
           "options": {
             "reasoningEffort": "max"
           },
@@ -89,7 +95,6 @@
           }
         },
         "thinking": {
-          "reasoning": true,
           "name": "thinking",
           "variants": {
             "minimal": {
@@ -117,11 +122,9 @@
           "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
-          },
-          "attachment": true
+          }
         },
         "coding": {
-          "reasoning": true,
           "name": "coding",
           "variants": {
             "minimal": {
@@ -149,24 +152,25 @@
           "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
-          },
-          "attachment": true
+          }
         },
         "instruct": {
           "name": "instruct",
           "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
-          },
-          "attachment": true
+          }
         },
         "vision": {
           "name": "vision",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
           "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
-          },
-          "attachment": true
+          }
         }
       }
     }
@@ -179,7 +183,12 @@
     "build": {
       "description": "Direct coding agent. Works solo (no orchestration, no delegation). Uses the proxy power-coding lane.",
       "mode": "primary",
-      "model": "lmproxy/power-coding"
+      "model": "lmproxy/power-coding",
+      "permission": {
+        "task": {
+          "*": "deny"
+        }
+      }
     }
   }
 }

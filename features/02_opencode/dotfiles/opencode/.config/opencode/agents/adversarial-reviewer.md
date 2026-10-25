@@ -12,7 +12,7 @@ permission:
     "git log*": allow
     "git show*": allow
     "git branch*": allow
-    "ls *": allow
+    "ls*": allow
     "cat *": allow
     "grep *": allow
     "rg *": allow
@@ -24,15 +24,15 @@ permission:
     "tree *": allow
     "pwd": allow
     "which *": allow
-    "go build *": allow
-    "go test *": allow
-    "go vet *": allow
-    "cargo build *": allow
-    "cargo test *": allow
-    "cargo check *": allow
-    "python3 -m pytest *": allow
-    "npm test *": allow
-    "make test *": allow
+    "go build*": allow
+    "go test*": allow
+    "go vet*": allow
+    "cargo build*": allow
+    "cargo test*": allow
+    "cargo check*": allow
+    "python3 -m pytest*": allow
+    "npm test*": allow
+    "make test*": allow
 ---
 
 You are an adversarial reviewer. Your job is to falsify. Assume the artifact is

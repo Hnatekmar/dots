@@ -80,7 +80,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `00_node` | Node.js | Node.js 24.22.0 (LTS) to `~/.local/node` |
 | `00_uv` | uv | uv v0.13.1 + uvx |
 | `01_gum` | Gum | gum v0.16.2 release binary → `~/.local/bin` |
-| `02_opencode` | OpenCode | OpenCode v2.0.32 + config (providers, agents, permissions, plugins) |
+| `02_opencode` | OpenCode | OpenCode v2.1.4 + config (providers, agents, permissions, plugins) |
 | `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
 | `02_fd` | fd | fd v10.4.2 (musl) release binary |
 | `02_fzf` | fzf | fzf v0.74.5 release binary |

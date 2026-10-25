@@ -6,11 +6,15 @@ permission:
   edit: deny
   bash:
     "*": deny
-    "go test *": allow
-    "cargo test *": allow
-    "python3 -m pytest *": allow
-    "npm test *": allow
-    "make test *": allow
+    # No space before the *: it must match the bare form too (`npm test`,
+    # `make test`), which is the normal invocation.
+    "go test*": allow
+    "cargo test*": allow
+    "python3 -m pytest*": allow
+    "pytest*": allow
+    "npm test*": allow
+    "npm run test*": allow
+    "make test*": allow
 ---
 
 You are a test-running agent. Execute test suites and report failures clearly.

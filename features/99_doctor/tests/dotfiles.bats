@@ -103,6 +103,25 @@ load helpers/utils
     done
 }
 
+@test "opencode config has no runtime-dropped model keys" {
+    # opencode 2.x omits `reasoning` / `attachment` on a model entry and logs a
+    # "configuration normalization diagnostic" at every start. Keep them out.
+    local cfg="$HOME/.config/opencode/opencode.json"
+    if [ ! -f "$cfg" ]; then skip "no opencode.json"; fi
+    run grep -E '"(reasoning|attachment)"[[:space:]]*:[[:space:]]*(true|false)' "$cfg"
+    [ "$status" -ne 0 ]
+}
+
+@test "opencode resolves the custom agents" {
+    # Catches a silent schema change: if the agent block stops being read, the
+    # built-ins remain and these agents vanish without any error.
+    if ! command -v opencode >/dev/null 2>&1; then skip "opencode not installed"; fi
+    run opencode debug agents
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'adversarial-reviewer'
+    echo "$output" | grep -q 'lead'
+}
+
 # ── Launcher ──
 
 @test "~/.local/bin/dots-bootstrap.sh is a symlink" {
