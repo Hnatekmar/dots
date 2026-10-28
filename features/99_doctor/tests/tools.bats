@@ -419,6 +419,16 @@ load helpers/utils
     [ -x "$HOME/.hermes/hermes-agent/.hermes/bin/hermes" ]
 }
 
+@test "hermes config is a seeded file, not a symlink" {
+    [ -f "$HOME/.hermes/config.yaml" ]
+    [ ! -L "$HOME/.hermes/config.yaml" ]
+}
+
+@test "hermes config uses the lmproxy provider" {
+    run grep -q 'provider: custom:lmproxy' "$HOME/.hermes/config.yaml"
+    [ "$status" -eq 0 ]
+}
+
 # ── OpenBao ──
 
 @test "bao is installed" {

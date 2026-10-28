@@ -192,6 +192,16 @@ dots/
   `node_modules`, built web + TUI), which dominates a container image build.
   Chromium and the computer-use driver stay out (`--skip-browser
   --skip-computer-use`); add them with `hermes pm install chromium|cua-driver`.
+- **The Hermes config is seeded, not stowed.** `features/08_hermes/config.yaml`
+  is copied over `~/.hermes/config.yaml` only when that file is missing or is
+  still byte-identical to `hermes-agent/cli-config.yaml.example`; `DOTS_FORCE=1`
+  re-seeds with a timestamped backup. Hermes rewrites its own config
+  (`hermes model`, `hermes config set`, `hermes update` migrations), so a
+  `stow_pkg` symlink would write through into the checkout — the same trap as
+  rustup's `--no-modify-path`. The seed runs BEFORE the version gate, which
+  `exit 0`s on a re-run and would otherwise skip a machine that already has the
+  pinned hermes. `_config_version` in the seed must track the pinned release, or
+  the next update runs a migration over the file.
 - **`lazygit --version` prints `key=value` fields** (`commit=..., build
   source=binaryRelease, version=0.63.1, os=linux, ...`) and ends with a trailing
   `git version=2.5x`. Parse with `grep -o 'version=[0-9][0-9.]*' | head -1`;
