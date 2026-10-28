@@ -107,7 +107,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_yq` | yq | yq v4.54.1 release binary |
 | `06_kubeconfig` | Cluster kubeconfigs | `dev-k8s` / `prod-k8s` contexts from devops-cluster + `dots-kubeconfig` |
 | `07_dev_env` | dev-env | dev-env CLI v0.3.0 (Kubernetes dev environments) |
-| `08_hermes` | Hermes Agent | Hermes Agent v0.22.5 (official installer, pinned commit) |
+| `08_hermes` | Hermes Agent | Hermes Agent v0.22.5 (official installer, pinned commit) + seeded lmproxy config |
 | `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
 
 Features run in lexical order. Each feature is idempotent. Use `--force` to reinstall. Run `dots-doctor` to validate installation.
@@ -143,6 +143,27 @@ dev-env list --json
 `--json` keeps stdout machine-readable, so an agent can create and inspect
 environments without a TTY. See the dev-envs README for sidecars, dind, and
 Ingress details.
+
+## Hermes Agent
+
+`08_hermes` installs Hermes Agent through upstream's own installer, pinned to a
+release commit, and seeds `~/.hermes/config.yaml` from
+`features/08_hermes/config.yaml`: the lmproxy proxy as the only provider, the
+same models and lanes as the OpenCode config (`power-coding` main, `instruct`
+for background work), no telemetry and no passive update checks.
+
+The config is copied once, not stowed: Hermes rewrites its own config
+(`hermes model`, `hermes config set`, `hermes update` migrations), and a symlink
+would write through into this checkout. A config you already tuned by hand is
+left untouched; re-seed on purpose with
+
+```bash
+dots-bootstrap.sh --only 08_hermes --force   # old file kept as config.yaml.bak-dots-<ts>
+```
+
+The browser (Chromium) and the computer-use driver are ~1 GB of optional
+downloads and stay out of the install; add them with `hermes pm install
+chromium` / `hermes pm install cua-driver`. A full install is ~2.4 GB.
 
 ## Security
 
