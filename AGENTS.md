@@ -239,14 +239,15 @@ dots/
   variant shape is what would let a per-variant `reasoningEffort` reach the
   wire.
 - **OpenCode skills come from two places**: local skills (herdr, hunk-*,
-  image-generation) are stowed from `features/02_opencode/dotfiles` into
-  `~/.config/opencode/skills/`; the shared mattpocock/skills set is installed
-  by `npx skills add ... -g -a opencode`, which writes to `~/.agents/skills/`
-  (opencode's global agent-compatible dir). That step needs network; on failure
-  the installer warns and bootstrap continues, so `dots-doctor` is what reports
-  the incomplete install. Never vendor that set back into `dotfiles/`: a stowed
-  copy in `~/.config/opencode/skills/` shadows the npx-installed one, and
-  `02_opencode` prunes those old trees on every run.
+  image-generation, asd-ste100) are stowed from
+  `features/02_opencode/dotfiles` into `~/.config/opencode/skills/`; the
+  shared mattpocock/skills set is installed by
+  `npx skills add ... -g -a opencode`, which writes to `~/.agents/skills/`
+  (opencode's global agent-compatible dir). That step needs network; on
+  failure the installer warns and bootstrap continues, so `dots-doctor` is
+  what reports the incomplete install. Never vendor that set back into
+  `dotfiles/`: a stowed copy in `~/.config/opencode/skills/` shadows the
+  npx-installed one, and `02_opencode` prunes those old trees on every run.
 - Architecture mapping is repeated per installer: `x86_64`→`amd64`/`x86_64`
   (differs by tool!), `aarch64`→`arm64`. Go uses `amd64`, Neovim uses `x86_64`
   for the same arch — don't assume a single mapping.

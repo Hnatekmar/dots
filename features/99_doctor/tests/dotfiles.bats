@@ -89,6 +89,11 @@ load helpers/utils
     [ -x "$HOME/.config/opencode/skills/image-generation/scripts/generate.sh" ]
 }
 
+@test "opencode has the asd-ste100 skill and its linter" {
+    [ -f "$HOME/.config/opencode/skills/asd-ste100/SKILL.md" ]
+    [ -x "$HOME/.config/opencode/skills/asd-ste100/scripts/ste-lint.py" ]
+}
+
 @test "shared skill set was installed by npx skills" {
     # 02_opencode installs mattpocock/skills into opencode's global
     # agent-compatible dir. A missing tree means the npx step was skipped
