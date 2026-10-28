@@ -165,6 +165,30 @@ load helpers/utils
     echo "$output" | head -1 | grep -q 'hyperfine 2\.'
 }
 
+# ── glow ──
+
+@test "glow is installed" {
+    assert_cmd glow
+}
+
+@test "glow version is 3.0.0+" {
+    run glow --version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q 'glow version 3\.'
+}
+
+# ── just ──
+
+@test "just is installed" {
+    assert_cmd just
+}
+
+@test "just version is 1.59.0+" {
+    run just --version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q '^just 1\.\(59\|[6-9][0-9]\|[1-9][0-9][0-9]\)\.'
+}
+
 # ── Shell / language tooling ──
 
 @test "direnv is installed" {
@@ -340,6 +364,66 @@ load helpers/utils
     run yq --version
     [ "$status" -eq 0 ]
     echo "$output" | grep -q 'version v4\.\(5[4-9]\|[6-9][0-9]\)\.'
+}
+
+# ── argocd ──
+
+@test "argocd is installed" {
+    assert_cmd argocd
+}
+
+@test "argocd version is 3.5.6+" {
+    run argocd version --client --short
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q 'argocd: v3\.\(5\|[6-9][0-9]\)\.'
+}
+
+# ── argo (workflows) ──
+
+@test "argo is installed" {
+    assert_cmd argo
+}
+
+@test "argo version is 4.1.6+" {
+    run argo version --short
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q 'argo: v4\.\(1\|[2-9][0-9]\)\.'
+}
+
+# ── talosctl ──
+
+@test "talosctl is installed" {
+    assert_cmd talosctl
+}
+
+@test "talosctl version is 1.14.5+" {
+    run talosctl version --client --short
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'Talos v1\.\(1[4-9]\|[2-9][0-9]\)\.'
+}
+
+# ── stern ──
+
+@test "stern is installed" {
+    assert_cmd stern
+}
+
+@test "stern version is 1.35.0+" {
+    run stern --version
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q '^version: 1\.\(3[5-9]\|[4-9][0-9]\)\.'
+}
+
+# ── kubeconform ──
+
+@test "kubeconform is installed" {
+    assert_cmd kubeconform
+}
+
+@test "kubeconform version is 0.8.0+" {
+    run kubeconform -v
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -Eq '^v0\.([89]|[1-9][0-9])\.'
 }
 
 # ── lazygit ──
