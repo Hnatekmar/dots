@@ -158,8 +158,12 @@ dots/
     *download* URLs and published checksum files are fine; only the API counts
     against the limit.
   - gum, lazygit, OpenBao, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu,
-    superfile: download a real `checksums`/`sha256sum` file, match the hash for
-    the exact asset, and compare it to `sha256sum` output.
+    superfile, argocd, argo, talosctl, stern, kubeconform, glow, just: download
+    a real `checksums`/`sha256sum` file, match the hash for the exact asset, and
+    compare it to `sha256sum` output. The filenames differ per project
+    (`cli_checksums.txt`, `argo-workflows-cli-checksums.txt`, `sha256sum.txt`,
+    `CHECKSUMS`, `SHA256SUMS`) — copy the name from the release, do not assume
+    `checksums.txt`.
   - ripgrep, uv, helm, kubectl: a `.sha256`/`.sha256sum` sidecar next to each
     binary/tarball.
   - OpenCode: the npm registry's `dist.integrity` (SHA512, base64), converted to

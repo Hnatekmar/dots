@@ -248,6 +248,28 @@ check_command_version() {
         herdr)
             actual=$(herdr --version 2>/dev/null | head -1 | sed -n 's/^herdr \([0-9][0-9.]*\).*/\1/p')
             ;;
+        argocd)
+            actual=$(argocd version --client --short 2>/dev/null | sed -n 's/^argocd: v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        argo)
+            actual=$(argo version --short 2>/dev/null | sed -n 's/^argo: v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        talosctl)
+            # Two lines: "Client:" then "Talos v1.14.5".
+            actual=$(talosctl version --client --short 2>/dev/null | sed -n 's/^Talos v\([0-9][0-9.]*\).*/\1/p' | head -1)
+            ;;
+        stern)
+            actual=$(stern --version 2>/dev/null | sed -n 's/^version: \([0-9][0-9.]*\).*/\1/p' | head -1)
+            ;;
+        kubeconform)
+            actual=$(kubeconform -v 2>/dev/null | head -1 | sed -n 's/^v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        glow)
+            actual=$(glow --version 2>/dev/null | head -1 | sed -n 's/^glow version \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        just)
+            actual=$(just --version 2>/dev/null | head -1 | sed -n 's/^just \([0-9][0-9.]*\).*/\1/p')
+            ;;
         hyperfine)
             actual=$(hyperfine --version 2>/dev/null | head -1 | sed -n 's/^hyperfine \([0-9][0-9.]*\).*/\1/p')
             ;;

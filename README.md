@@ -84,6 +84,8 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
 | `02_fd` | fd | fd v10.4.2 (musl) release binary |
 | `02_fzf` | fzf | fzf v0.74.5 release binary |
+| `02_glow` | glow | glow v3.0.0 release binary (markdown renderer) |
+| `02_just` | just | just v1.59.0 release binary |
 | `02_hyperfine` | hyperfine | hyperfine v2.0.0 (musl) release binary |
 | `02_superfile` | superfile | superfile v1.6.0 (`spf`, TUI file manager) |
 | `02_hunk` | Hunk | hunk v0.23.0 release binary + git diff pager |
@@ -95,6 +97,8 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `03_lazyvim` | LazyVim | submodule + nvim symlink |
 | `03_fastfetch` | fastfetch | fastfetch v2.70.0 release binary + presets |
 | `04_openbao` | OpenBao | OpenBao 2.6.1 binary |
+| `05_argo` | Argo Workflows CLI | argo v4.1.6 release binary |
+| `05_argocd` | Argo CD CLI | argocd v3.5.6 release binary |
 | `05_gh` | GitHub CLI | gh v2.102.0 release binary |
 | `05_helm` | Helm | helm v4.3.1 release binary |
 | `05_jq` | jq | jq v1.8.2 release binary |
@@ -102,8 +106,11 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_kubectl` | kubectl | kubectl v1.37.1 release binary |
 | `05_kubelogin` | kubelogin | kubelogin v0.2.21 release binary (OIDC exec plugin) |
 | `05_kubecolor` | kubecolor | kubecolor v0.8.0 release binary |
+| `05_kubeconform` | kubeconform | kubeconform v0.8.0 release binary |
 | `05_kubectx` | kubectx | kubectx + kubens v0.11.0 release binaries |
 | `05_opentofu` | OpenTofu | OpenTofu v1.13.1 release binary |
+| `05_stern` | stern | stern v1.35.0 release binary (multi-pod logs) |
+| `05_talosctl` | talosctl | talosctl v1.14.5 release binary (Talos) |
 | `05_yq` | yq | yq v4.54.1 release binary |
 | `06_kubeconfig` | Cluster kubeconfigs | `dev-k8s` / `prod-k8s` contexts from devops-cluster + `dots-kubeconfig` |
 | `07_dev_env` | dev-env | dev-env CLI v0.3.0 (Kubernetes dev environments) |
@@ -176,7 +183,7 @@ Every artifact is checksum-verified before it is unpacked or installed:
 | Go | SHA256 from the official `go.dev/dl` JSON index |
 | Node.js | SHA256 from the official `nodejs.org` `SHASUMS256.txt` |
 | Neovim, fd, hyperfine, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq | SHA256 pinned in `features/checksums.txt`, per architecture |
-| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu, superfile | checksum files published in the release |
+| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu, superfile, argocd, argo, talosctl, stern, kubeconform, glow, just | checksum files published in the release |
 | uv, helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
@@ -235,7 +242,9 @@ dots/
 │   ├── 02_ripgrep/            # ripgrep release binary
 │   ├── 02_fd/                 # fd release binary
 │   ├── 02_fzf/                # fzf release binary
+│   ├── 02_glow/               # glow release binary
 │   ├── 02_hyperfine/          # hyperfine release binary
+│   ├── 02_just/               # just release binary
 │   ├── 02_superfile/          # superfile (spf) release binary
 │   ├── 02_hunk/               # hunk release binary + git pager integration
 │   ├── 02_lsd/                # lsd release binary
@@ -246,6 +255,8 @@ dots/
 │   ├── 03_lazyvim/            # LazyVim submodule + nvim symlink
 │   ├── 03_fastfetch/          # fastfetch release binary + presets
 │   ├── 04_openbao/            # OpenBao binary install
+│   ├── 05_argo/               # Argo Workflows CLI release binary
+│   ├── 05_argocd/             # Argo CD CLI release binary
 │   ├── 05_gh/                 # GitHub CLI release binary
 │   ├── 05_helm/               # helm release binary
 │   ├── 05_jq/                 # jq release binary
@@ -253,8 +264,11 @@ dots/
 │   ├── 05_kubectl/            # kubectl release binary
 │   ├── 05_kubelogin/          # kubelogin release binary
 │   ├── 05_kubecolor/          # kubecolor release binary
+│   ├── 05_kubeconform/        # kubeconform release binary
 │   ├── 05_kubectx/            # kubectx + kubens release binaries
 │   ├── 05_opentofu/           # OpenTofu release binary
+│   ├── 05_stern/              # stern release binary
+│   ├── 05_talosctl/           # talosctl release binary
 │   ├── 05_yq/                 # yq release binary
 │   ├── 06_kubeconfig/         # devops-cluster contexts + dots-kubeconfig
 │   ├── 07_dev_env/            # dev-env CLI release tarball
