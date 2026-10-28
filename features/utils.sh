@@ -248,6 +248,18 @@ check_command_version() {
         herdr)
             actual=$(herdr --version 2>/dev/null | head -1 | sed -n 's/^herdr \([0-9][0-9.]*\).*/\1/p')
             ;;
+        hyperfine)
+            actual=$(hyperfine --version 2>/dev/null | head -1 | sed -n 's/^hyperfine \([0-9][0-9.]*\).*/\1/p')
+            ;;
+        spf)
+            # superfile's binary is `spf`; it prints "superfile version v1.6.0".
+            actual=$(spf --version 2>/dev/null | head -1 | sed -n 's/^superfile version v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        hermes)
+            # "Hermes Agent v0.21.5 (2026.9.24) · upstream ..." — the release
+            # date follows the version, so stop at the space.
+            actual=$(hermes --version 2>/dev/null | head -1 | sed -n 's/^Hermes Agent v\([0-9][0-9.]*\).*/\1/p')
+            ;;
         direnv)
             actual=$(direnv version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\).*/\1/p')
             ;;

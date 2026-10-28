@@ -26,9 +26,9 @@ Environment:
                            \${XDG_CACHE_HOME:-\$HOME/.cache}/dots). Point it at
                            a shared directory to reuse downloads across
                            machines; set it to an empty string to disable.
-  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/fzf/zoxide/lsd/yq/k9s/kubecolor/herdr
-                           from source instead of installing the pinned release
-                           binaries.
+  #  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/fzf/hyperfine/superfile/zoxide/lsd/
+                             #  yq/k9s/kubecolor/herdr from source instead of install-
+                             #  ing the pinned release binaries.
 EOF
 }
 
