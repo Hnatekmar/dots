@@ -1,0 +1,91 @@
+# Hermes Agent config seeded by dots (features/08_hermes/install.sh).
+#
+# Mirrors ~/.config/opencode/opencode.json: the lmproxy OpenAI-compatible proxy
+# as the only provider, the same model set, power-coding as the main lane and
+# instruct as the cheap lane for background work, no telemetry, no passive
+# update checks.
+#
+# install.sh COPIES this into ~/.hermes/config.yaml once instead of symlinking
+# it: Hermes rewrites its own config (`hermes model`, `hermes config set`,
+# `hermes update` migrations) and a symlink would write through into the dots
+# checkout. Re-seed with: dots-bootstrap.sh --only 08_hermes --force
+
+_config_version: 51
+
+model:
+  provider: custom:lmproxy
+  default: power-coding
+  reasoning_echo: true
+
+custom_providers:
+  - name: lmproxy
+    base_url: https://proxy.personal-hermes.hnatekmar.dev/v1
+    model: power-coding
+    models:
+      power-coding: {}
+      power-thinking: {}
+      power-instruct: {}
+      thinking: {}
+      coding: {}
+      instruct: {}
+      vision: {}
+    reasoning_efforts:
+      - minimal
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+
+agent:
+  max_turns: 999
+  reasoning_effort: max
+
+compression:
+  enabled: true
+  threshold: 0.9
+
+# Background jobs on the cheap lane (opencode's `small_model: instruct`).
+# base_url and api_key come from the named provider entry above.
+auxiliary:
+  vision:
+    provider: custom:lmproxy
+    model: vision
+  compression:
+    provider: custom:lmproxy
+    model: instruct
+  title_generation:
+    provider: custom:lmproxy
+    model: instruct
+  approval:
+    provider: custom:lmproxy
+    model: instruct
+  mcp:
+    provider: custom:lmproxy
+    model: instruct
+  skills_hub:
+    provider: custom:lmproxy
+    model: instruct
+  triage_specifier:
+    provider: custom:lmproxy
+    model: instruct
+  profile_describer:
+    provider: custom:lmproxy
+    model: instruct
+  curator:
+    provider: custom:lmproxy
+    model: instruct
+  monitor:
+    provider: custom:lmproxy
+    model: instruct
+
+# opencode has `share: disabled` and `autoupdate: false`; the Hermes equivalent
+# is opting out of both telemetry opt-ins and the passive update check
+# (`hermes update --check` still works when asked explicitly).
+telemetry:
+  shared_metrics:
+    enabled: false
+    send: false
+
+updates:
+  check: false

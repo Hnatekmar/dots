@@ -7,6 +7,29 @@ source "$(dirname "$0")/../utils.sh"
 # PATH export, and the installer publishes its launcher into ~/.local/bin.
 export PATH="$HOME/.local/bin:$PATH"
 
+FEATURE_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG="$HOME/.hermes/config.yaml"
+STOCK_CONFIG="$HOME/.hermes/hermes-agent/cli-config.yaml.example"
+
+# Seed the config before the version gate: a machine that already has a current
+# hermes still needs the provider, and the gate exits 0. Hermes rewrites its own
+# config (`hermes model`, `config set`, update migrations), so this is a
+# one-time copy, not a stowed symlink. Seed only when the file is absent or is
+# still the installer's untouched example; anything else was configured by hand
+# and is left alone. --force re-seeds with a backup.
+if [ ! -f "$CONFIG" ] || [ "${DOTS_FORCE:-0}" = "1" ] ||
+    { [ -f "$STOCK_CONFIG" ] && [ "$(digest_of "$CONFIG" sha256)" = "$(digest_of "$STOCK_CONFIG" sha256)" ]; }; then
+    # `bak-dots-<ts>`: Hermes sweeps its own `config.yaml.bak.<digits>` siblings
+    # into ~/.hermes/backups/config on startup, hand-named copies it leaves be.
+    if [ -f "$CONFIG" ]; then
+        cp -f "$CONFIG" "$CONFIG.bak-dots-$(date +%Y%m%d%H%M%S)"
+    fi
+    mkdir -p "$(dirname "$CONFIG")"
+    cp -f "$FEATURE_DIR/config.yaml" "$CONFIG"
+    chmod 600 "$CONFIG"
+    echo "==> Seeded $CONFIG from features/08_hermes/config.yaml"
+fi
+
 # Hermes Agent — the long-running coding agent. Upstream publishes no wheel
 # (setup.py refuses to build one), no standalone binary and no source tarball:
 # the shell installer is the supported path. It clones the tree into
