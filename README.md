@@ -54,7 +54,7 @@ bash bootstrap.sh
 | unset | Cache under `${XDG_CACHE_HOME:-$HOME/.cache}/dots` |
 | `DOTS_CACHE_DIR=/path` | Use that directory, e.g. a shared NAS mount |
 | `DOTS_CACHE_DIR=` (empty) | Disable caching for this run |
-| `DOTS_BUILD_FROM_SOURCE=1` | Build Gum, ripgrep, fd, fzf, zoxide, lsd, yq, k9s, kubecolor and herdr from source |
+| `DOTS_BUILD_FROM_SOURCE=1` | Build Gum, ripgrep, fd, fzf, hyperfine, superfile, zoxide, lsd, yq, k9s, kubecolor and herdr from source |
 
 Entries are stored as `<tool>/<version>/<filename>`, so the cache stays
 browsable and can be shared by machines of both architectures (the arch is part
@@ -84,6 +84,8 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
 | `02_fd` | fd | fd v10.4.2 (musl) release binary |
 | `02_fzf` | fzf | fzf v0.74.5 release binary |
+| `02_hyperfine` | hyperfine | hyperfine v2.0.0 (musl) release binary |
+| `02_superfile` | superfile | superfile v1.6.0 (`spf`, TUI file manager) |
 | `02_hunk` | Hunk | hunk v0.23.0 release binary + git diff pager |
 | `02_lsd` | lsd | lsd v1.2.0 (musl) release binary |
 | `02_zoxide` | zoxide | zoxide v0.10.0 (musl) release binary |
@@ -105,6 +107,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_yq` | yq | yq v4.54.1 release binary |
 | `06_kubeconfig` | Cluster kubeconfigs | `dev-k8s` / `prod-k8s` contexts from devops-cluster + `dots-kubeconfig` |
 | `07_dev_env` | dev-env | dev-env CLI v0.3.0 (Kubernetes dev environments) |
+| `08_hermes` | Hermes Agent | Hermes Agent v0.22.5 (official installer, pinned commit) |
 | `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
 
 Features run in lexical order. Each feature is idempotent. Use `--force` to reinstall. Run `dots-doctor` to validate installation.
@@ -151,11 +154,12 @@ Every artifact is checksum-verified before it is unpacked or installed:
 |--------|----------|
 | Go | SHA256 from the official `go.dev/dl` JSON index |
 | Node.js | SHA256 from the official `nodejs.org` `SHASUMS256.txt` |
-| Neovim, fd, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq | SHA256 pinned in `features/checksums.txt`, per architecture |
-| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu | checksum files published in the release |
+| Neovim, fd, hyperfine, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq | SHA256 pinned in `features/checksums.txt`, per architecture |
+| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu, superfile | checksum files published in the release |
 | uv, helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
+| Hermes Agent | the upstream `uv.lock` hashes, via its own installer |
 
 No feature calls the GitHub API: anonymous requests are capped at 60/hour per
 IP, which shared CI and container hosts exhaust. Where upstream publishes no
@@ -210,6 +214,8 @@ dots/
 │   ├── 02_ripgrep/            # ripgrep release binary
 │   ├── 02_fd/                 # fd release binary
 │   ├── 02_fzf/                # fzf release binary
+│   ├── 02_hyperfine/          # hyperfine release binary
+│   ├── 02_superfile/          # superfile (spf) release binary
 │   ├── 02_hunk/               # hunk release binary + git pager integration
 │   ├── 02_lsd/                # lsd release binary
 │   ├── 02_zoxide/             # zoxide release binary
@@ -231,6 +237,7 @@ dots/
 │   ├── 05_yq/                 # yq release binary
 │   ├── 06_kubeconfig/         # devops-cluster contexts + dots-kubeconfig
 │   ├── 07_dev_env/            # dev-env CLI release tarball
+│   ├── 08_hermes/             # Hermes Agent (official installer, pinned commit)
 │   └── 99_doctor/             # Test suites + doctor executable
 └── .gitmodules                # LazyVim submodule
 ```

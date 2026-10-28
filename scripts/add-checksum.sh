@@ -37,6 +37,11 @@ for url in "$@"; do
     fi
 done
 
-# Keep the file sorted by asset name, so diffs stay readable.
-sort -k2 -o "$MANIFEST" "$MANIFEST"
+# Keep the data lines sorted by asset name, so diffs stay readable. Comments
+# are left alone: sorting them into the entries mangles the header.
+SORTED="$(mktemp)"
+trap 'rm -rf "$TMP_FOLDER" "$SORTED"' EXIT
+grep -E '^[[:space:]]*#' "$MANIFEST" > "$SORTED" || true
+grep -vE '^[[:space:]]*#' "$MANIFEST" | sort -k2 >> "$SORTED"
+mv "$SORTED" "$MANIFEST"
 echo "==> Updated $MANIFEST"

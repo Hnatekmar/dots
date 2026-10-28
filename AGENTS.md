@@ -149,17 +149,17 @@ dots/
   - Go: fetches SHA256 from the official `go.dev/dl/?mode=json` API (no
     downloadable checksum file).
   - Node.js: fetches SHA256 from the official `nodejs.org` `SHASUMS256.txt`.
-  - Neovim, fd, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq: upstream
-    publishes no usable checksum file, so the digest is pinned in
+  - Neovim, fd, hyperfine, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq:
+    upstream publishes no usable checksum file, so the digest is pinned in
     `features/checksums.txt` keyed by asset name; refresh it with
     `scripts/add-checksum.sh <asset-url>` when bumping a version.
     **Never call `api.github.com` from an installer**: anonymous requests are
     capped at 60/hour per IP and a fleet of dev containers exhausts that. Release
     *download* URLs and published checksum files are fine; only the API counts
     against the limit.
-  - gum, lazygit, OpenBao, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu:
-    download a real `checksums`/`sha256sum` file, match the hash for the exact
-    asset, and compare it to `sha256sum` output.
+  - gum, lazygit, OpenBao, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu,
+    superfile: download a real `checksums`/`sha256sum` file, match the hash for
+    the exact asset, and compare it to `sha256sum` output.
   - ripgrep, uv, helm, kubectl: a `.sha256`/`.sha256sum` sidecar next to each
     binary/tarball.
   - OpenCode: the npm registry's `dist.integrity` (SHA512, base64), converted to
@@ -180,6 +180,18 @@ dots/
   and `zsh-syntax-highlighting` referenced in `~/.zshrc` are cloned into
   `$OH_MY_ZSH/custom/plugins` because they aren't bundled with oh-my-zsh.
   `zsh` is added to the prereq install in `bootstrap.sh`.
+- **Hermes Agent installs through upstream's own script** (`08_hermes`), pinned
+  with `--commit`. The script served from `hermes-agent.nousresearch.com` is
+  unversioned and tracks main, so the commit is the pin — and it must match the
+  script's current layout: v0.21.5 predates `pm/`, and the served script fails
+  against it looking for `pm/lock.json`. Two side effects matter: the installer
+  appends a PATH guard line to the rc file matching `$SHELL`, so the feature
+  runs it with `SHELL=zsh` (`~/.bash_profile` is a symlink into this repo and
+  has no PATH line, so the bash branch would write through it); and a full
+  install is ~2.4 GB / ~2 min (venv, pm-provided node and ffmpeg,
+  `node_modules`, built web + TUI), which dominates a container image build.
+  Chromium and the computer-use driver stay out (`--skip-browser
+  --skip-computer-use`); add them with `hermes pm install chromium|cua-driver`.
 - **`lazygit --version` prints `key=value` fields** (`commit=..., build
   source=binaryRelease, version=0.63.1, os=linux, ...`) and ends with a trailing
   `git version=2.5x`. Parse with `grep -o 'version=[0-9][0-9.]*' | head -1`;

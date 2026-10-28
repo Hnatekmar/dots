@@ -137,6 +137,34 @@ load helpers/utils
     echo "$output" | head -1 | grep -q 'herdr 0\.\(9\|[1-9][0-9]\)\.'
 }
 
+# ── superfile ──
+
+@test "spf (superfile) is installed" {
+    assert_cmd spf
+}
+
+@test "superfile version is 1.6.0+" {
+    run spf --version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q 'superfile version v1\.\([6-9]\|[1-9][0-9]\)\.'
+}
+
+@test "spf is installed in ~/.local/bin (rootless)" {
+    [ -x "$HOME/.local/bin/spf" ]
+}
+
+# ── hyperfine ──
+
+@test "hyperfine is installed" {
+    assert_cmd hyperfine
+}
+
+@test "hyperfine version is 2.0.0+" {
+    run hyperfine --version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -q 'hyperfine 2\.'
+}
+
 # ── Shell / language tooling ──
 
 @test "direnv is installed" {
@@ -373,6 +401,22 @@ load helpers/utils
     run opencode --version
     [ "$status" -eq 0 ]
     echo "$output" | head -1 | grep -q 'v2\.'
+}
+
+# ── hermes ──
+
+@test "hermes is installed" {
+    assert_cmd hermes
+}
+
+@test "hermes version is 0.22.5+" {
+    run hermes --version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -Eq '^Hermes Agent v0\.(2[2-9]|[3-9][0-9])\.'
+}
+
+@test "hermes install tree is under ~/.hermes" {
+    [ -x "$HOME/.hermes/hermes-agent/.hermes/bin/hermes" ]
 }
 
 # ── OpenBao ──
