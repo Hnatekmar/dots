@@ -113,7 +113,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_talosctl` | talosctl | talosctl v1.14.5 release binary (Talos) |
 | `05_yq` | yq | yq v4.54.1 release binary |
 | `06_kubeconfig` | Cluster kubeconfigs | `dev-k8s` / `prod-k8s` contexts from devops-cluster + `dots-kubeconfig` |
-| `07_dev_env` | dev-env | dev-env CLI v0.3.0 (Kubernetes dev environments) |
+| `07_kiseki` | kiseki | kiseki CLI, commit-pinned (Kubernetes dev environments) |
 | `08_hermes` | Hermes Agent | Hermes Agent v0.22.5 (official installer, pinned commit) + seeded lmproxy config |
 | `99_doctor` | Doctor | BATS test suites + `dots-doctor` executable |
 
@@ -137,18 +137,20 @@ why refreshing is a command and not a one-time install step.
 
 ## Dev environments
 
-`07_dev_env` installs the `dev-env` CLI from `hnatekmarorg/dev-envs`, and `socat`
-is installed as a system prerequisite because its SSH proxy needs it:
+`07_kiseki` installs the `kiseki` CLI from `hnatekmar/kiseki` (canonical on
+Forgejo, fetched from its GitHub mirror), and `socat` is installed as a system
+prerequisite because its SSH proxy needs it. The repo has no release tags yet,
+so the tarball is pinned to a commit:
 
 ```bash
-dev-env create my-env --cpu 2 --memory 4Gi
-dev-env create web --address web.dev-k8s.srv.hnatekmar.dev --port 3000
-dev-env create api --container redis=redis:7-alpine,port=6379 --docker
-dev-env list --json
+kiseki create my-env --cpu 2 --memory 4Gi
+kiseki create web --address web.dev-k8s.srv.hnatekmar.dev --port 3000
+kiseki create api --container redis=redis:7-alpine,port=6379 --docker
+kiseki list --json
 ```
 
 `--json` keeps stdout machine-readable, so an agent can create and inspect
-environments without a TTY. See the dev-envs README for sidecars, dind, and
+environments without a TTY. See the kiseki README for sidecars, dind, and
 Ingress details.
 
 ## Hermes Agent
@@ -271,7 +273,7 @@ dots/
 │   ├── 05_talosctl/           # talosctl release binary
 │   ├── 05_yq/                 # yq release binary
 │   ├── 06_kubeconfig/         # devops-cluster contexts + dots-kubeconfig
-│   ├── 07_dev_env/            # dev-env CLI release tarball
+│   ├── 07_kiseki/             # kiseki CLI tarball
 │   ├── 08_hermes/             # Hermes Agent (official installer, pinned commit)
 │   └── 99_doctor/             # Test suites + doctor executable
 └── .gitmodules                # LazyVim submodule

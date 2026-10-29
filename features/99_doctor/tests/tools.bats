@@ -570,14 +570,14 @@ load helpers/utils
     echo "$output" | grep -qx 'prod-k8s'
 }
 
-# ── dev-env ──
+# ── kiseki ──
 
-@test "dev-env is installed" {
-    assert_cmd dev-env
+@test "kiseki is installed" {
+    assert_cmd kiseki
 }
 
-@test "dev-env renders its help" {
-    run dev-env --help
+@test "kiseki renders its help" {
+    run kiseki --help
     [ "$status" -eq 0 ]
     echo "$output" | grep -q -- '--address'
 }

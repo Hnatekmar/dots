@@ -86,7 +86,7 @@ verify_sha256() {
 # DOTS_CACHE_DIR. Entries are laid out as <tool>/<version>/<filename> so a
 # shared cache stays browsable and pinned versions never collide.
 #
-#   DOTS_CACHE_DIR=/mnt/nas/cache/dots   # shared cache (e.g. dev-envs NAS)
+#   DOTS_CACHE_DIR=/mnt/nas/cache/dots   # shared cache (e.g. across kiseki dev boxes)
 #   DOTS_CACHE_DIR=""                    # disable caching
 #
 # Unset falls back to ${XDG_CACHE_HOME:-$HOME/.cache}/dots.
