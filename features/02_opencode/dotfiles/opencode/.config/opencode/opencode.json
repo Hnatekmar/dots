@@ -3,8 +3,12 @@
   "default_agent": "lead",
   "small_model": "lmproxy/instruct",
   "model": "lmproxy/power-coding",
-  "enabled_providers": ["lmproxy"],
-  "instructions": ["~/.config/opencode/instructions.md"],
+  "enabled_providers": [
+    "lmproxy"
+  ],
+  "instructions": [
+    "~/.config/opencode/instructions.md"
+  ],
   "autoupdate": false,
   "share": "disabled",
   "snapshot": true,
@@ -46,8 +50,13 @@
             }
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "power-coding": {
@@ -83,15 +92,25 @@
             }
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "power-instruct": {
           "name": "power-instruct",
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "thinking": {
@@ -120,8 +139,13 @@
             }
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "coding": {
@@ -150,15 +174,25 @@
             }
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "instruct": {
           "name": "instruct",
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
         "vision": {
@@ -168,8 +202,106 @@
             "output": 32768
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        },
+        "power-thinking-uncensored": {
+          "name": "power-thinking-uncensored",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        },
+        "power-coding-uncensored": {
+          "name": "power-coding-uncensored",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "options": {
+            "reasoningEffort": "max"
+          },
+          "variants": {
+            "minimal": {
+              "reasoningEffort": "minimal"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            }
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        },
+        "power-instruct-uncensored": {
+          "name": "power-instruct-uncensored",
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         }
       }
