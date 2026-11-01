@@ -3,6 +3,8 @@
 # Mirrors ~/.config/opencode/opencode.json: the lmproxy OpenAI-compatible proxy
 # as the only provider, the same model set, power-coding as the main lane and
 # instruct as the cheap lane for background work, no telemetry, no passive
+# update checks. The *-uncensored profiles are opt-in twins of the power-*
+# lanes (GLP-steered DeepSeek name on the Spark lane); defaults unchanged.
 # update checks.
 #
 # install.sh COPIES this into ~/.hermes/config.yaml once instead of symlinking
@@ -25,6 +27,9 @@ custom_providers:
       power-coding: {}
       power-thinking: {}
       power-instruct: {}
+      power-coding-uncensored: {}
+      power-thinking-uncensored: {}
+      power-instruct-uncensored: {}
       thinking: {}
       coding: {}
       instruct: {}
