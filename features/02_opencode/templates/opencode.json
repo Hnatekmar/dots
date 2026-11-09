@@ -307,7 +307,12 @@
       }
     }
   },
-  "mcp": {},
+  "mcp": {
+    "graphiti": {
+      "type": "remote",
+      "url": "__GRAPHITI_MCP_URL__"
+    }
+  },
   "permission": {
     "*": "allow"
   },
