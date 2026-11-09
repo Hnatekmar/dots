@@ -32,6 +32,32 @@ done
 
 stow_pkg "$(dirname "$0")/dotfiles" opencode
 
+# The MCP endpoint depends on where bootstrap runs, so opencode.json is
+# rendered from a template instead of stowed:
+#   * inside a kiseki environment, the shared Graphiti service answers on its
+#     Service name (graphiti.graphiti.svc);
+#   * on a workstation, the single-user Graphiti instance answers on loopback.
+# GRAPHITI_MCP_URL overrides both for a one-off install.
+render_opencode_config() {
+    local url="${GRAPHITI_MCP_URL:-}"
+    if [ -z "$url" ]; then
+        if [ -d /var/run/secrets/kubernetes.io/serviceaccount ]; then
+            url="http://graphiti.graphiti.svc:8000/mcp"
+        else
+            url="http://127.0.0.1:8004/mcp"
+        fi
+    fi
+    mkdir -p "$HOME/.config/opencode"
+    # A previous install stowed this file; drop the symlink before writing.
+    rm -f "$HOME/.config/opencode/opencode.json"
+    sed "s|__GRAPHITI_MCP_URL__|${url}|g" \
+        "$FEATURE_DIR/templates/opencode.json" > "$HOME/.config/opencode/opencode.json"
+    chmod 0644 "$HOME/.config/opencode/opencode.json"
+    echo "==> opencode graph memory endpoint: ${url}"
+}
+
+render_opencode_config
+
 # Shared skill set from mattpocock/skills, installed into opencode's global
 # agent-compatible dir (~/.agents/skills), which opencode loads alongside
 # ~/.config/opencode/skills.
