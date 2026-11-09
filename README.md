@@ -81,6 +81,8 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `00_uv` | uv | uv v0.13.1 + uvx |
 | `01_gum` | Gum | gum v0.16.2 release binary → `~/.local/bin` |
 | `02_opencode` | OpenCode | OpenCode v2.1.4 + config (providers, agents, permissions, plugins) |
+| `02_claude` | Claude Code | Claude Code v2.1.311 (npm, stable channel) → `~/.local/node/bin` |
+| `02_rocketchat_mcp` | Rocket.Chat MCP | rocketchat-mcp v0.1.0 release binary + `dots-rocketchat-mcp` |
 | `02_ripgrep` | ripgrep | ripgrep v15.2.0 (musl) release binary |
 | `02_fd` | fd | fd v10.4.2 (musl) release binary |
 | `02_fzf` | fzf | fzf v0.74.5 release binary |
@@ -151,6 +153,36 @@ dev-env list --json
 environments without a TTY. See the dev-envs README for sidecars, dind, and
 Ingress details.
 
+## Claude Code and the Rocket.Chat MCP
+
+`02_claude` installs Claude Code from npm at the pinned stable version into
+`~/.local/node/bin`. The npm package is only a wrapper: its postinstall lays
+down the native binary, so `claude` runs without node in the loop.
+
+`02_rocketchat_mcp` installs the `rocketchat-mcp` server and
+`dots-rocketchat-mcp`, which registers it with Claude Code. Credentials are read
+from the environment or from `~/.config/rocketchat-mcp/env` (the environment
+wins), so nothing secret lives in this repo:
+
+```sh
+mkdir -p ~/.config/rocketchat-mcp
+cat > ~/.config/rocketchat-mcp/env <<'EOF'
+ROCKETCHAT_URL=https://chat.example.com
+ROCKETCHAT_USER_ID=your-user-id
+ROCKETCHAT_AUTH_TOKEN=your-personal-access-token
+EOF
+chmod 600 ~/.config/rocketchat-mcp/env
+
+dots-rocketchat-mcp                 # user scope: available in every project
+dots-rocketchat-mcp --scope local   # this directory only
+dots-rocketchat-mcp --remove        # unregister
+```
+
+Create the token in Rocket.Chat under **Profile > Personal Access Tokens**. It
+ends up in `~/.claude.json` (mode 0600), where Claude Code keeps MCP servers.
+Re-running the command after rotating the token replaces the entry instead of
+failing on the existing name.
+
 ## Hermes Agent
 
 `08_hermes` installs Hermes Agent through upstream's own installer, pinned to a
@@ -187,6 +219,8 @@ Every artifact is checksum-verified before it is unpacked or installed:
 | uv, helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
+| Claude Code | the npm registry's SHA512 integrity hash (wrapper and native package) |
+| Rocket.Chat MCP | `checksums.txt` published in the release |
 | Hermes Agent | the upstream `uv.lock` hashes, via its own installer |
 
 No feature calls the GitHub API: anonymous requests are capped at 60/hour per
@@ -239,6 +273,8 @@ dots/
 │   ├── 00_uv/                 # uv + uvx release binaries
 │   ├── 01_gum/                # gum release binary
 │   ├── 02_opencode/           # opencode + config
+│   ├── 02_claude/             # Claude Code (npm, pinned)
+│   ├── 02_rocketchat_mcp/     # rocketchat-mcp binary + dots-rocketchat-mcp
 │   ├── 02_ripgrep/            # ripgrep release binary
 │   ├── 02_fd/                 # fd release binary
 │   ├── 02_fzf/                # fzf release binary

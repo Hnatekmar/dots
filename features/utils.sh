@@ -329,8 +329,16 @@ check_command_version() {
         k9s)
             actual=$(k9s version --short 2>/dev/null | sed -n 's/^Version[[:space:]]*v\([0-9][0-9.]*\).*/\1/p' | head -1)
             ;;
+        claude)
+            # "2.1.311 (Claude Code)"
+            actual=$(claude --version 2>/dev/null | head -1 | sed -n 's/^\([0-9][0-9.]*\) (Claude Code).*/\1/p')
+            ;;
         opencode)
             actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
+            ;;
+        rocketchat-mcp)
+            # "-version" and "--version" both print a bare "v0.1.0".
+            actual=$(rocketchat-mcp --version 2>/dev/null | head -1 | sed -n 's/^v\([0-9][0-9.]*\).*/\1/p')
             ;;
         kubelogin)
             # `kubelogin --version` prints "kubelogin version " followed by an

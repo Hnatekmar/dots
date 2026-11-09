@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# Register the Rocket.Chat MCP server with Claude Code.
+#
+#   dots-rocketchat-mcp                 # register (user scope: every project)
+#   dots-rocketchat-mcp --scope local   # register for the current directory only
+#   dots-rocketchat-mcp --remove        # unregister
+#
+# Credentials come from the environment or from
+# ~/.config/rocketchat-mcp/env (KEY=VALUE lines, mode 0600); the environment
+# wins. Create a personal access token in Rocket.Chat under
+# Profile > Personal Access Tokens.
+#
+# `claude mcp add` stores the token in plain text in ~/.claude.json (mode 0600).
+set -euo pipefail
+
+ENV_FILE="${ROCKETCHAT_MCP_ENV:-${XDG_CONFIG_HOME:-$HOME/.config}/rocketchat-mcp/env}"
+MCP_BIN="${ROCKETCHAT_MCP_BIN:-$HOME/.local/bin/rocketchat-mcp}"
+SCOPE=user
+NAME=rocketchat
+ACTION=add
+
+err() { printf 'dots-rocketchat-mcp: %s\n' "$*" >&2; }
+die() {
+  err "$@"
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+usage: dots-rocketchat-mcp [options]
+
+Registers the Rocket.Chat MCP server with Claude Code.
+
+  -s, --scope <local|user|project>  Config scope (default: user)
+                                    user    every project (recommended)
+                                    local   this directory only
+                                    project committed .mcp.json (shared)
+  -n, --name <name>                 MCP server name (default: rocketchat)
+  -r, --remove                      Unregister instead of registering
+  -h, --help                        Show this help
+
+Credentials, read from the environment or from
+~/.config/rocketchat-mcp/env (mode 0600), environment first:
+
+  ROCKETCHAT_URL=https://chat.example.com
+  ROCKETCHAT_USER_ID=<user id>
+  ROCKETCHAT_AUTH_TOKEN=<personal access token>
+
+  ROCKETCHAT_MCP_ENV    override the credentials file path
+  ROCKETCHAT_MCP_BIN    override the server binary path
+  CLAUDE_MCP_SCOPE      default scope, same values as --scope
+EOF
+}
+
+# Read KEY=VALUE lines without sourcing the file: a credentials file must not be
+# able to run commands. Values already in the environment are left alone.
+load_env_file() {
+  local line key val mode
+  [ -f "$ENV_FILE" ] || return 0
+
+  mode="$(stat -c '%a' "$ENV_FILE" 2>/dev/null || true)"
+  case "$mode" in
+  600 | 400) ;;
+  *) err "WARN: $ENV_FILE is mode ${mode:-unknown}; chmod 600 it, it holds a token" ;;
+  esac
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    case "$line" in '' | '#'*) continue ;; esac
+    [ "${line#*=}" != "$line" ] || continue
+    key="${line%%=*}"
+    key="${key%"${key##*[![:space:]]}"}"
+    val="${line#*=}"
+    # dotenv rules: a quoted value ends at its closing quote, an unquoted one at
+    # the first " #" comment; trailing whitespace goes either way.
+    case "$val" in
+    \"*) val="${val#\"}" && val="${val%%\"*}" ;;
+    \'*) val="${val#\'}" && val="${val%%\'*}" ;;
+    *)
+      case "$val" in
+      *[[:space:]]"#"*) val="${val%%[[:space:]]#*}" ;;
+      esac
+      val="${val%"${val##*[![:space:]]}"}"
+      ;;
+    esac
+    case "$key" in
+    ROCKETCHAT_URL | ROCKETCHAT_USER_ID | ROCKETCHAT_AUTH_TOKEN)
+      [ -n "${!key:-}" ] || export "$key=$val"
+      ;;
+    *) err "WARN: ignoring $key in $ENV_FILE" ;;
+    esac
+  done <"$ENV_FILE"
+}
+
+main() {
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    -s | --scope)
+      SCOPE="${2:-}"
+      [ -n "$SCOPE" ] || die "--scope needs a value"
+      shift 2
+      ;;
+    -n | --name)
+      NAME="${2:-}"
+      [ -n "$NAME" ] || die "--name needs a value"
+      shift 2
+      ;;
+    -r | --remove) ACTION=remove; shift ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *) die "unknown argument '$1' (try --help)" ;;
+    esac
+  done
+
+  SCOPE="${SCOPE:-${CLAUDE_MCP_SCOPE:-user}}"
+  case "$SCOPE" in
+  local | user | project) ;;
+  *) die "invalid scope '$SCOPE' (use local, user, or project)" ;;
+  esac
+
+  command -v claude >/dev/null 2>&1 ||
+    die "claude is not on PATH (run bootstrap.sh, or 02_claude alone)"
+
+  if [ "$ACTION" = remove ]; then
+    claude mcp remove "$NAME" -s "$SCOPE"
+    printf 'dots-rocketchat-mcp: removed %s from %s scope\n' "$NAME" "$SCOPE"
+    return 0
+  fi
+
+  load_env_file
+
+  local missing=""
+  local var
+  for var in ROCKETCHAT_URL ROCKETCHAT_USER_ID ROCKETCHAT_AUTH_TOKEN; do
+    [ -n "${!var:-}" ] || missing="$missing $var"
+  done
+  if [ -n "$missing" ]; then
+    err "missing:$missing"
+    err "set them in the environment, or create $ENV_FILE:"
+    err ""
+    err "  ROCKETCHAT_URL=https://chat.example.com"
+    err "  ROCKETCHAT_USER_ID=your-user-id"
+    err "  ROCKETCHAT_AUTH_TOKEN=your-personal-access-token"
+    err ""
+    err "then: chmod 600 $ENV_FILE"
+    exit 1
+  fi
+
+  # Rocket.Chat URLs are bases, not endpoints: a trailing slash turns every
+  # request path into a double slash.
+  ROCKETCHAT_URL="${ROCKETCHAT_URL%/}"
+  case "$ROCKETCHAT_URL" in
+  http://* | https://*) ;;
+  *) die "ROCKETCHAT_URL must start with http:// or https:// (got '$ROCKETCHAT_URL')" ;;
+  esac
+
+  [ -x "$MCP_BIN" ] ||
+    die "$MCP_BIN is missing or not executable (run bootstrap.sh, or 02_rocketchat_mcp alone)"
+
+  # `claude mcp add` refuses a name that already exists, so re-running this to
+  # rotate a token is remove + add. An absent entry is not an error.
+  claude mcp remove "$NAME" -s "$SCOPE" >/dev/null 2>&1 || true
+
+  # --env is variadic: the first positional argument would be swallowed as
+  # another value, so --transport must come before the name.
+  claude mcp add --scope "$SCOPE" \
+    --env "ROCKETCHAT_URL=$ROCKETCHAT_URL" \
+    --env "ROCKETCHAT_USER_ID=$ROCKETCHAT_USER_ID" \
+    --env "ROCKETCHAT_AUTH_TOKEN=$ROCKETCHAT_AUTH_TOKEN" \
+    --transport stdio "$NAME" -- "$MCP_BIN"
+
+  local report status
+  report="$(claude mcp get "$NAME" 2>&1 || true)"
+  status="$(printf '%s\n' "$report" | sed -n 's/^  Status: //p' | head -1)"
+  [ -n "$status" ] || die "claude did not report $NAME as registered"
+
+  printf 'dots-rocketchat-mcp: %s -> %s (%s scope, %s)\n' \
+    "$NAME" "$ROCKETCHAT_URL" "$SCOPE" "$status"
+  printf 'dots-rocketchat-mcp: token stored in ~/.claude.json (mode 0600); rotate it in Rocket.Chat and re-run this command\n'
+}
+
+main "$@"

@@ -434,7 +434,7 @@ load helpers/utils
 
 # ── prebuilt binaries ──
 
-@test "gum, rg, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, uvx, tofu, gh, kubectx, kubens, fastfetch, helm, kubectl, k9s, kubecolor, jq, yq and lazygit install as prebuilt binaries in ~/.local/bin" {
+@test "gum, rg, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, uvx, tofu, gh, kubectx, kubens, fastfetch, helm, kubectl, k9s, kubecolor, jq, yq, lazygit and rocketchat-mcp install as prebuilt binaries in ~/.local/bin" {
     # bat is left out on purpose: on Fedora the package set already provides
     # bat at the pinned version, so 02_bat's version gate legitimately skips
     # the local install.
@@ -461,6 +461,7 @@ load helpers/utils
     [ -x "$HOME/.local/bin/jq" ]
     [ -x "$HOME/.local/bin/yq" ]
     [ -x "$HOME/.local/bin/lazygit" ]
+    [ -x "$HOME/.local/bin/rocketchat-mcp" ]
 }
 
 # ── gum ──
@@ -485,6 +486,47 @@ load helpers/utils
     run opencode --version
     [ "$status" -eq 0 ]
     echo "$output" | head -1 | grep -q 'v2\.'
+}
+
+# ── Claude Code ──
+
+@test "claude is installed" {
+    assert_cmd claude
+}
+
+@test "claude version is 2.1.311+" {
+    run claude --version
+    [ "$status" -eq 0 ]
+    # "2.1.311 (Claude Code)"
+    assert_version_ge "$(echo "$output" | head -1 | cut -d' ' -f1)" "2.1.311"
+}
+
+@test "claude is installed under ~/.local/node (rootless)" {
+    [ -x "$HOME/.local/node/bin/claude" ]
+    [ ! -e "/usr/local/bin/claude" ]
+}
+
+# ── Rocket.Chat MCP ──
+
+@test "rocketchat-mcp is installed" {
+    assert_cmd rocketchat-mcp
+}
+
+@test "rocketchat-mcp version is 0.1.0+" {
+    run rocketchat-mcp --version
+    [ "$status" -eq 0 ]
+    # "v0.1.0"
+    assert_version_ge "$(echo "$output" | head -1 | sed 's/^v//')" "0.1.0"
+}
+
+@test "rocketchat-mcp is installed in ~/.local/bin (rootless)" {
+    [ -x "$HOME/.local/bin/rocketchat-mcp" ]
+}
+
+@test "dots-rocketchat-mcp renders its help" {
+    run dots-rocketchat-mcp --help
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q -- '--scope'
 }
 
 # ── hermes ──
