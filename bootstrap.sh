@@ -84,10 +84,14 @@ done
 if [ -z "$MISSING_PREREQS" ]; then
     echo "==> prerequisites already present"
 elif [ "$(id -u)" = "0" ]; then
+    # util-linux-user (Fedora) / passwd (Debian) carry chsh, which the shell
+    # section below needs. It is not in every base image -- fedora:45 ships
+    # util-linux without chsh -- and without it the login shell stays bash while
+    # the bootstrap reports success, which the doctor suite then catches.
     if command -v dnf >/dev/null 2>&1; then
-        dnf install -y git curl tar findutils python3 gcc make zsh socat
+        dnf install -y git curl tar findutils python3 gcc make zsh socat util-linux-user
     elif command -v apt-get >/dev/null 2>&1; then
-        apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make zsh socat
+        apt-get update -qq && apt-get install -y git curl tar findutils python3 gcc make zsh socat passwd
     elif command -v pacman >/dev/null 2>&1; then
         pacman -S --noconfirm --needed git curl tar findutils python gcc make zsh socat
     else
