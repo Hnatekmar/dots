@@ -26,6 +26,10 @@ Environment:
                            \${XDG_CACHE_HOME:-\$HOME/.cache}/dots). Point it at
                            a shared directory to reuse downloads across
                            machines; set it to an empty string to disable.
+  GIT_HTTP_LOW_SPEED_LIMIT / GIT_HTTP_LOW_SPEED_TIME
+                           Abort a git fetch that drops below 1KB/s for 30s
+                           (the defaults). Raise them on a deliberately slow
+                           link.
   #  DOTS_BUILD_FROM_SOURCE=1 Build gum/ripgrep/fd/fzf/hyperfine/superfile/zoxide/lsd/
                              #  yq/k9s/kubecolor/herdr from source instead of install-
                              #  ing the pinned release binaries.
@@ -49,6 +53,16 @@ done
 
 export DOTS_FORCE
 
+# Bound every network fetch the features make. A blackholed or throttled edge
+# does not fail: it dribbles (measured at ~1MB/min on a full hermes-agent clone),
+# so the bootstrap looks hung rather than broken. With these, git aborts after
+# 30s below 1KB/s and the feature fails visibly instead. GIT_TERMINAL_PROMPT=0
+# stops a clone that wants credentials from waiting on a prompt nobody can answer
+# (which is what an unattended bootstrap does today).
+export GIT_TERMINAL_PROMPT="${GIT_TERMINAL_PROMPT:-0}"
+export GIT_HTTP_LOW_SPEED_LIMIT="${GIT_HTTP_LOW_SPEED_LIMIT:-1000}"
+export GIT_HTTP_LOW_SPEED_TIME="${GIT_HTTP_LOW_SPEED_TIME:-30}"
+
 # Install build prerequisites. Names differ slightly per distro
 # (python vs python3), so handle them explicitly in one place. Tool installs
 # are distro-agnostic: pinned release binaries where upstream publishes them,
@@ -58,7 +72,18 @@ export DOTS_FORCE
 # built-in symlink function (stow_pkg in features/utils.sh).
 
 echo "==> Checking prerequisites..."
-if [ "$(id -u)" = "0" ]; then
+# Only reach for the package manager when something is actually missing. On an
+# image that already ships the prerequisites (e.g. the kiseki base image) the
+# install is a no-op transaction but still a metadata refresh against the distro
+# mirrors — a network fetch in the bootstrap's critical path.
+MISSING_PREREQS=""
+for cmd in git curl tar find python3 gcc make zsh socat; do
+    command -v "$cmd" >/dev/null 2>&1 || MISSING_PREREQS="$MISSING_PREREQS $cmd"
+done
+
+if [ -z "$MISSING_PREREQS" ]; then
+    echo "==> prerequisites already present"
+elif [ "$(id -u)" = "0" ]; then
     if command -v dnf >/dev/null 2>&1; then
         dnf install -y git curl tar findutils python3 gcc make zsh socat
     elif command -v apt-get >/dev/null 2>&1; then
@@ -70,17 +95,9 @@ if [ "$(id -u)" = "0" ]; then
         exit 1
     fi
 else
-    MISSING=""
-    for cmd in git curl tar find python3 gcc make zsh socat; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            MISSING="$MISSING $cmd"
-        fi
-    done
-    if [ -n "$MISSING" ]; then
-        echo "ERROR: missing required commands:$MISSING" >&2
-        echo "       Install them via your package manager (requires root), then re-run." >&2
-        exit 1
-    fi
+    echo "ERROR: missing required commands:$MISSING_PREREQS" >&2
+    echo "       Install them via your package manager (requires root), then re-run." >&2
+    exit 1
 fi
 
 # Ensure node + go + cargo + go-installed binaries are in PATH for all feature installers
