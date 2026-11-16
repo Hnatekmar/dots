@@ -25,7 +25,9 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: [self-hosted, mgmt]
+    # k8s, not mgmt: mgmt is reserved for terraform and other infrastructure
+    # work, and a one-minute lint job must not queue in front of an apply.
+    runs-on: [self-hosted, k8s]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
