@@ -38,8 +38,21 @@ fi
 HERMES_VERSION=0.22.5
 HERMES_COMMIT=bf0203a794a07aac3ff764972ab9087baa4e4f4e
 
+HERMES_TREE="hermes/${HERMES_VERSION}-${HERMES_COMMIT:0:9}"
+
 if check_command_version hermes "$HERMES_VERSION"; then
     echo "==> Hermes Agent $HERMES_VERSION already installed, skipping"
+    exit 0
+fi
+
+# A fresh environment can take the finished tree from the shared cache instead of
+# cloning and building it again -- the clone is the fetch that turns a bad edge
+# into a fifteen-minute stall. DOTS_FORCE means "do the work", so it skips this.
+# The version gate is re-checked after restoring: a cache entry that does not
+# satisfy it must fall through to a real install.
+if [ "${DOTS_FORCE:-0}" != "1" ] && tree_cache_restore "$HERMES_TREE" &&
+    check_command_version hermes "$HERMES_VERSION"; then
+    echo "==> Hermes Agent $HERMES_VERSION restored from the tree cache"
     exit 0
 fi
 
@@ -68,5 +81,11 @@ SHELL=/usr/bin/zsh bash "$INSTALLER" --non-interactive \
 
 check_command_version hermes "$HERMES_VERSION" \
     || { echo "ERROR: hermes $HERMES_VERSION is not on PATH after install" >&2; exit 1; }
+
+# Publish the install tree for the next environment. .local/bin/hermes carries an
+# absolute path into ~/.hermes, which is why the entry is bound to this $HOME.
+tree_cache_publish "$HERMES_TREE" "$HOME" \
+    .hermes/hermes-agent .hermes/tools .hermes/installs .local/bin/hermes ||
+    echo "WARN: could not publish the hermes tree to the cache" >&2
 
 echo "==> Hermes Agent $HERMES_VERSION installed (config: ~/.hermes/config.yaml)."

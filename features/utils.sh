@@ -162,6 +162,72 @@ install_bin() {
     rm -f "$HOME/go/bin/$name" "$HOME/.cargo/bin/$name"
 }
 
+# ── Install-tree cache ────────────────────────────────────────────────────
+# A few features install a tree that costs far more to fetch than to copy.
+# 08_hermes clones and builds ~2.4G -- the part of a bootstrap that sits on a
+# slow link for a quarter of an hour. A tar of the finished tree in the download
+# cache turns that re-install into a local extract.
+#
+# Entries live at <cache>/trees/<key>/tree.tar beside a `home` sidecar. The
+# sidecar is load-bearing: these trees contain absolute paths (venv shebangs,
+# the ~/.local/bin/hermes wrapper), so an entry built under /root is only valid
+# for a $HOME of /root. A different home misses the cache and installs normally.
+# The tree cache is a *shared*-cache feature: it only pays off when the same tar
+# is reused by another machine. Requiring DOTS_CACHE_DIR to be set explicitly
+# keeps it out of the default ~/.cache, where it would add 2.3G to a
+# single-machine install (and to the CI image) for no benefit.
+tree_cache_dir() {
+    local root
+    [ -n "${DOTS_CACHE_DIR:-}" ] || return 1
+    root="$(dots_cache_dir)"
+    [ -n "$root" ] || return 1
+    printf '%s/trees\n' "$root"
+}
+
+# tree_cache_restore <key> [home]
+#
+# Extract <cache>/trees/<key>/tree.tar into [home] when it was built there.
+# Returns 0 when something was restored, 1 when there is nothing usable. The
+# caller still has to verify the result -- a cached tree that does not satisfy
+# the version gate is worse than no cache.
+tree_cache_restore() {
+    local key="$1" home="${2:-$HOME}"
+    local dir entry built
+    dir="$(tree_cache_dir)" || return 1
+    entry="$dir/$key"
+    [ -f "$entry/tree.tar" ] || return 1
+    built="$(cat "$entry/home" 2>/dev/null || true)"
+    if [ "$built" != "$home" ]; then
+        echo "WARN: tree cache entry $key was built for '$built', not '$home'; ignoring" >&2
+        return 1
+    fi
+    echo "==> Restoring $key from the tree cache ($(du -h "$entry/tree.tar" | cut -f1))"
+    tar -C "$home" -xf "$entry/tree.tar"
+}
+
+# tree_cache_publish <key> <home> <path>...
+#
+# Tar <path>... (relative to <home>) into the cache. Writes beside the entry and
+# renames, so a bootstrap racing another one never publishes a partial tar.
+tree_cache_publish() {
+    local key="$1" home="$2"
+    shift 2
+    local dir entry tmp
+    dir="$(tree_cache_dir)" || return 1
+    entry="$dir/$key"
+    mkdir -p "$entry" 2>/dev/null || return 1
+    [ -w "$entry" ] || return 1
+    tmp="$(mktemp "$entry/tree.tar.XXXXXX")" || return 1
+    if tar -C "$home" -cf "$tmp" "$@"; then
+        printf '%s\n' "$home" >"$entry/home"
+        mv -f "$tmp" "$entry/tree.tar"
+        echo "==> Published $key to the tree cache ($(du -h "$entry/tree.tar" | cut -f1))"
+    else
+        rm -f "$tmp"
+        return 1
+    fi
+}
+
 # ── Pinned digests ────────────────────────────────────────────────────────
 # features/checksums.txt holds digests for release assets whose upstream
 # publishes no usable checksum file. Lookup is by filename, since the asset name
