@@ -104,7 +104,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_jq` | jq | jq v1.8.2 release binary |
 | `05_k9s` | k9s | k9s v0.51.0 release binary |
 | `05_kubectl` | kubectl | kubectl v1.37.1 release binary |
-| `05_kubelogin` | kubelogin | kubelogin v0.2.21 release binary (OIDC exec plugin) |
+| `05_kubelogin` | kubelogin | kubelogin v1.36.4 release binary (int128 OIDC exec plugin) |
 | `05_kubecolor` | kubecolor | kubecolor v0.8.0 release binary |
 | `05_kubeconform` | kubeconform | kubeconform v0.8.0 release binary |
 | `05_kubectx` | kubectx | kubectx + kubens v0.11.0 release binaries |

@@ -555,10 +555,16 @@ load helpers/utils
     assert_cmd kubelogin
 }
 
-@test "kubelogin version is 0.2.21+" {
+@test "kubelogin version is 1.36.4+" {
     run kubelogin --version
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q 'git hash: v0\.2\.\(2[1-9]\|[3-9][0-9]\)'
+    echo "$output" | grep -qE 'kubelogin version v1\.(3[6-9]|[4-9][0-9])\.'
+}
+
+@test "kubelogin is the OIDC plugin (int128), not the Azure AKS plugin" {
+    run kubelogin get-token --help
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q -- '--oidc-issuer-url'
 }
 
 @test "kubelogin is installed in ~/.local/bin (rootless)" {

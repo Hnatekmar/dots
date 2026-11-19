@@ -337,9 +337,11 @@ check_command_version() {
             actual=$(opencode --version 2>/dev/null | sed -n 's/^opencode v\([0-9][0-9.]*\).*/\1/p')
             ;;
         kubelogin)
-            # `kubelogin --version` prints "kubelogin version " followed by an
-            # empty value; the real version sits in the git hash line.
-            actual=$(kubelogin --version 2>/dev/null | sed -n 's|^git hash: v\([0-9][0-9.]*\)/.*|\1|p' | head -1)
+            # int128/kubelogin prints "kubelogin version v1.36.4".
+            # Azure/kubelogin leaves the version blank there and prints the
+            # version in a "git hash:" line instead, so parsing the blank line
+            # as empty also rejects that wrong binary.
+            actual=$(kubelogin --version 2>/dev/null | sed -n 's/^kubelogin version v\([0-9][0-9.]*\).*/\1/p' | head -1)
             ;;
         lazygit)
             # Release binaries print "..., version=0.63.1, os=linux, ...";
