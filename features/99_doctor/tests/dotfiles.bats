@@ -134,22 +134,22 @@ load helpers/utils
     [ "$output" = "$HOME/.local/bin/opencode" ]
 }
 
-@test "opencode agent definitions are present and bound to a model" {
-    # `opencode debug agents` would prove they load, but it needs a live managed
-    # service and returns nothing useful inside the image build, so assert the
-    # definition files instead. Actual resolution was verified by hand against
-    # 2.1.4 (`run --standalone`); this guards against a file going missing or
-    # losing its model binding.
-    local dir="$HOME/.config/opencode/agents"
-    for agent in lead researcher reviewer adversarial-reviewer test-runner; do
-        [ -f "$dir/$agent.md" ] || { echo "missing agent file: $agent.md"; false; }
-        grep -q '^model: lmproxy/' "$dir/$agent.md" || { echo "$agent.md has no lmproxy model"; false; }
+@test "opencode defaults to the build agent bound to a model" {
+    # Plan/build split: build (defined in opencode.json) is the default and works
+    # itself; plan, explore and general are opencode built-ins. Custom markdown
+    # agents were removed after A/B tests showed the lead/reviewer fan-out cost
+    # 3-15x the time for no measurable gain.
+    local cfg="$HOME/.config/opencode/opencode.json"
+    run grep -q '"default_agent": "build"' "$cfg"
+    [ "$status" -eq 0 ]
+    run python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert c["agent"]["build"]["model"].startswith("lmproxy/")' "$cfg"
+    [ "$status" -eq 0 ]
+    # Any markdown agent that is added back must still bind a model.
+    local f
+    for f in "$HOME"/.config/opencode/agents/*.md; do
+        [ -e "$f" ] || continue
+        grep -q '^model: lmproxy/' "$f" || { echo "$(basename "$f") has no lmproxy model"; false; }
     done
-    # build is defined in opencode.json, not as a markdown agent.
-    run grep -q '"build": {' "$HOME/.config/opencode/opencode.json"
-    [ "$status" -eq 0 ]
-    run grep -q '"default_agent": "lead"' "$HOME/.config/opencode/opencode.json"
-    [ "$status" -eq 0 ]
 }
 
 # ── Launcher ──
