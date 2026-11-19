@@ -109,6 +109,7 @@ Clearing the cache is always safe — `rm -rf "$DOTS_CACHE_DIR"`.
 | `05_kubeconform` | kubeconform | kubeconform v0.8.0 release binary |
 | `05_kubectx` | kubectx | kubectx + kubens v0.11.0 release binaries |
 | `05_opentofu` | OpenTofu | OpenTofu v1.13.1 release binary |
+| `05_oras` | ORAS | oras v1.4.0 release binary (OCI artifacts) |
 | `05_stern` | stern | stern v1.35.0 release binary (multi-pod logs) |
 | `05_talosctl` | talosctl | talosctl v1.14.5 release binary (Talos) |
 | `05_yq` | yq | yq v4.54.1 release binary |
@@ -183,7 +184,7 @@ Every artifact is checksum-verified before it is unpacked or installed:
 | Go | SHA256 from the official `go.dev/dl` JSON index |
 | Node.js | SHA256 from the official `nodejs.org` `SHASUMS256.txt` |
 | Neovim, fd, hyperfine, zoxide, lsd, hunk, herdr, direnv, bat, fastfetch, yq | SHA256 pinned in `features/checksums.txt`, per architecture |
-| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu, superfile, argocd, argo, talosctl, stern, kubeconform, glow, just | checksum files published in the release |
+| gum, lazygit, OpenBao, ripgrep, fzf, jq, k9s, gh, kubectx, kubecolor, opentofu, oras, superfile, argocd, argo, talosctl, stern, kubeconform, glow, just | checksum files published in the release |
 | uv, helm, kubectl | `.sha256`/`.sha256sum` sidecar next to the binary/tarball |
 | rustup-init | `.sha256` sidecar |
 | OpenCode | the npm registry's SHA512 integrity hash |
@@ -267,6 +268,7 @@ dots/
 │   ├── 05_kubeconform/        # kubeconform release binary
 │   ├── 05_kubectx/            # kubectx + kubens release binaries
 │   ├── 05_opentofu/           # OpenTofu release binary
+│   ├── 05_oras/               # oras release binary (OCI artifacts)
 │   ├── 05_stern/              # stern release binary
 │   ├── 05_talosctl/           # talosctl release binary
 │   ├── 05_yq/                 # yq release binary

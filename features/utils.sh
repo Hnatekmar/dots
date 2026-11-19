@@ -264,6 +264,10 @@ check_command_version() {
         kubeconform)
             actual=$(kubeconform -v 2>/dev/null | head -1 | sed -n 's/^v\([0-9][0-9.]*\).*/\1/p')
             ;;
+        oras)
+            # "Version:        1.4.0" — the label is padded with spaces.
+            actual=$(oras version 2>/dev/null | sed -n 's/^Version:[[:space:]]*\([0-9][0-9.]*\).*/\1/p' | head -1)
+            ;;
         glow)
             actual=$(glow --version 2>/dev/null | head -1 | sed -n 's/^glow version \([0-9][0-9.]*\).*/\1/p')
             ;;
