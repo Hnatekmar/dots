@@ -57,3 +57,6 @@ setopt appendhistory
 
 fpath=(~/.zsh/completions $fpath)
 autoload -U compinit && compinit
+### bling.sh source start
+test -f /usr/share/ublue-os/bling/bling.sh && source /usr/share/ublue-os/bling/bling.sh
+### bling.sh source end
