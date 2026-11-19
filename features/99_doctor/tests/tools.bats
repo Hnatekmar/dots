@@ -426,6 +426,18 @@ load helpers/utils
     echo "$output" | head -1 | grep -Eq '^v0\.([89]|[1-9][0-9])\.'
 }
 
+# ── oras ──
+
+@test "oras is installed" {
+    assert_cmd oras
+}
+
+@test "oras version is 1.4.0+" {
+    run oras version
+    [ "$status" -eq 0 ]
+    echo "$output" | head -1 | grep -Eq '^Version:[[:space:]]+1\.([4-9]|[1-9][0-9])\.'
+}
+
 # ── lazygit ──
 
 @test "lazygit is installed" {
@@ -434,7 +446,7 @@ load helpers/utils
 
 # ── prebuilt binaries ──
 
-@test "gum, rg, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, uvx, tofu, gh, kubectx, kubens, fastfetch, helm, kubectl, k9s, kubecolor, jq, yq and lazygit install as prebuilt binaries in ~/.local/bin" {
+@test "gum, rg, fd, fzf, zoxide, lsd, hunk, herdr, direnv, uv, uvx, tofu, gh, kubectx, kubens, fastfetch, helm, kubectl, k9s, kubecolor, jq, yq, oras and lazygit install as prebuilt binaries in ~/.local/bin" {
     # bat is left out on purpose: on Fedora the package set already provides
     # bat at the pinned version, so 02_bat's version gate legitimately skips
     # the local install.
@@ -460,6 +472,7 @@ load helpers/utils
     [ -x "$HOME/.local/bin/kubecolor" ]
     [ -x "$HOME/.local/bin/jq" ]
     [ -x "$HOME/.local/bin/yq" ]
+    [ -x "$HOME/.local/bin/oras" ]
     [ -x "$HOME/.local/bin/lazygit" ]
 }
 
